@@ -1,12 +1,15 @@
 This is the project to storage information about liecens plate and entry time of vehicles in parking area by using AI Thinker ESP32-CAM, geminiAI, and firebase.
 
 # Set up:
-### Prepare Gemini API:
+### Set up driver:
+- Extract CP210x_Windows_Drivers_with_Serial_Enumeration.zip
+- Run x64 or x86 installer depend on your device.
+### Set up Gemini API:
 - Access and sign in the Gemini AI Developers (https://ai.google.dev)
 - In Solution, choose Gemini API
 - Choose "Get a Gemini API Key"
 - Choose "Create API Key" and create an API Key (can skip if already have one)
-### Prepare Firebase:
+### Set up Firebase:
 - Access Firebase and sign in Firebase (firebase.google.com)
 - Choose "Get started in console"
 - Choose "Create a firebase project" or choose your project if already have
@@ -17,5 +20,6 @@ This is the project to storage information about liecens plate and entry time of
 - install library:
   +  esp32cam-main.zip in this repository
   +  ArduinoJson
+
 
 
