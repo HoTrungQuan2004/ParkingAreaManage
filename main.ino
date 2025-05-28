@@ -8,7 +8,7 @@
 const char* WIFI_SSID = "";  //Add your Wifi SSID
 const char* WIFI_PASS = "";  //Add your Wifi Password
 const char* GEMINI_API_KEY = "";  //Add your Gemini API Key
-//remmber to add <name>.json at the end of URL
+//remmber to add <name>.json at the end of URL. You can use any name for <name>.
 const char* FIREBASE_URL = "";  //Add URL of your firebase realtime database
 
 // NTP
