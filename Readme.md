@@ -36,7 +36,7 @@ This is the project to storage information about liecens plate and entry time of
 - select AI Thinker ESP32-CAM as your board and choose your port
 - Fill your WIFI SSID and Password
 - Fill GEMINI_API_KEY with your API Key on https://ai.google.dev
-- Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name)
+- Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name) (Eg: firbease-link/data.json)
 - Modify and Upload code to your ESP32-CAM
 
 # Notes:
