@@ -20,6 +20,14 @@ This is the project to storage information about liecens plate and entry time of
 - install library:
   +  esp32cam-main.zip in this repository
   +  ArduinoJson
+# Running:
+- open main.ino in Arduino IDE
+- select AI Thinker ESP32-CAM as your board and choose your port
+- Fill your WIFI SSID and Password
+- Fill GEMINI_API_KEY with your API Key on https://ai.google.dev
+- Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name)
+- Modify and Upload code to your ESP32-CAM
 
-
-
+# Note:
+- The code is using GMT+7 for entry time
+- Errors may occur when the image is blurred, or letters and numbers are obscured by obstacles such as mud. A fix is ​​being worked on.
