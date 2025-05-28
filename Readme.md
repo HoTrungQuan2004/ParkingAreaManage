@@ -1,5 +1,15 @@
 This is the project to storage information about liecens plate and entry time of vehicles in parking area by using AI Thinker ESP32-CAM, geminiAI, and firebase.
 
+# Workflow summary:
+- The ESP32-CAM boots and connects to WIFI
+- The camera is initialized, and time is synchronized via NTP.
+- A FreeRTOS task repeatedly:
+  + Capture an image every 3 seconds and encode it it to Base64
+  + Send it to Gemini API to detect the number plate
+  + Validates the detected plate
+  + Stores valid plates and timestamps in Firebase
+- Debug messages are printed to the Serial Monitor for monitoring
+  
 # Set up:
 ### Set up driver:
 - Extract CP210x_Windows_Drivers_with_Serial_Enumeration.zip
@@ -20,6 +30,7 @@ This is the project to storage information about liecens plate and entry time of
 - install library:
   +  esp32cam-main.zip in this repository
   +  ArduinoJson
+
 # Running:
 - open main.ino in Arduino IDE
 - select AI Thinker ESP32-CAM as your board and choose your port
@@ -28,6 +39,7 @@ This is the project to storage information about liecens plate and entry time of
 - Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name)
 - Modify and Upload code to your ESP32-CAM
 
-# Note:
-- The code is using GMT+7 for entry time
-- Errors may occur when the image is blurred, or letters and numbers are obscured by obstacles such as mud. A fix is ​​being worked on.
+# Notes:
+- Connection errors may occur if the network is weak
+- The speed of recognizing and sending information of a license plate can be a bit slow
+- Errors may occur when the image is blurred, or letters and numbers are obscured by obstacles such as mud. A fix is ​​being worked on
