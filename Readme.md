@@ -1,4 +1,4 @@
-This is the project to storage information about liecens plate and entry time of vehicles in parking area by using AI Thinker ESP32-CAM, geminiAI, and firebase.
+This is the project to storage information about liecens plate and entry time of vehicles in parking area by using AI Thinker ESP32-CAM, geminiAI, and firebase. The dataset will be displayed through a web app that receives data from firebase messaging.
 
 # Workflow summary:
 - The ESP32-CAM boots and connects to WIFI
@@ -30,7 +30,22 @@ This is the project to storage information about liecens plate and entry time of
 - install library:
   +  esp32cam-main.zip in this repository
   +  ArduinoJson
-
+### Set up web app:
+- In Firebase consle, enter "project settings" in your project
+- Choose "Web app" -> name it -> Click ** Register App **
+- Copy the Firebase configuration code as follows:
+``` js
+const firebaseConfig = {
+  apiKey: "API_KEY",
+  authDomain: "PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://PROJECT_ID.firebaseio.com",
+  projectId: "PROJECT_ID",
+  storageBucket: "PROJECT_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+```
+- Replace the firebaseConfig values in Index.html with the actual values from your Firebase Console.
 # Running:
 - open main.ino in Arduino IDE
 - select AI Thinker ESP32-CAM as your board and choose your port
@@ -38,6 +53,8 @@ This is the project to storage information about liecens plate and entry time of
 - Fill GEMINI_API_KEY with your API Key on https://ai.google.dev
 - Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name) (Eg: firbease-link/data.json)
 - Modify and Upload code to your ESP32-CAM
+- Press RST button on the ESP32-CAM
+- Open web app directly by double-click Index.html or by using Live Server extension in VSCode
 
 # Notes:
 - Connection errors may occur if the network is weak

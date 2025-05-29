@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Number Plate Viewer</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+</head>
+<body>
+  <h2>Realtime Number Plates</h2>
+  <div id="numberPlateList"></div>
+
+  <script>
+    // Replace with your actual Firebase project configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://licencesplayeai-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const list = document.getElementById("numberPlateList");
+
+    // Function to display a new plate entry
+    function addPlate(key, data) {
+      const plate = document.createElement("div");
+      plate.className = "plate";
+      plate.innerHTML = `
+        <strong>${data.number_plate}</strong><br>
+        <div class="date">${data.date_time}</div>
+      `;
+      list.prepend(plate); // Show newest record at the top
+    }
+
+    // Listen for new entries in the "numberplate" node
+    db.ref("numberplate").on("child_added", snapshot => {
+      addPlate(snapshot.key, snapshot.val());
+    });
+  </script>
+</body>
+</html>
