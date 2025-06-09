@@ -1,52 +1,431 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Number Plate Viewer</title>
+    <title>Smart Parking Management System</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <h2>Realtime Number Plates</h2>
-  <div id="numberPlateList"></div>
+    <div class="container">
+        <header class="header">
+            <h1>🚗 Smart Parking Management System</h1>
+            <div class="last-updated" id="lastUpdated">Last Updated: --</div>
+        </header>
 
-  <script>
-    // Replace with your actual Firebase project configuration
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://licencesplayeai-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+        <!-- Parking Statistics Dashboard -->
+        <div class="dashboard">
+            <div class="stat-card total">
+                <h3>Total Slots</h3>
+                <div class="stat-number" id="totalSlots">--</div>
+            </div>
+            <div class="stat-card occupied">
+                <h3>Occupied</h3>
+                <div class="stat-number" id="occupiedSlots">--</div>
+            </div>
+            <div class="stat-card available">
+                <h3>Available</h3>
+                <div class="stat-number" id="availableSlots">--</div>
+            </div>
+            <div class="stat-card occupancy">
+                <h3>Occupancy Rate</h3>
+                <div class="stat-number" id="occupancyRate">--%</div>
+            </div>
+        </div>
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3>📊 Daily Vehicle Count (Last 7 Days)</h3>
+                <canvas id="dailyChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>📈 Monthly Vehicle Count (Last 6 Months)</h3>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
 
-    const list = document.getElementById("numberPlateList");
+        <!-- Current Vehicles Section -->
+        <div class="vehicles-section">
+            <h2>🚙 Currently Parked Vehicles</h2>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="🔍 Search by license plate..." />
+            </div>
+            <div id="currentVehiclesList" class="vehicles-list"></div>
+        </div>
 
-    // Function to display a new plate entry
-    function addPlate(key, data) {
-      const plate = document.createElement("div");
-      plate.className = "plate";
-      plate.innerHTML = `
-        <strong>${data.number_plate}</strong><br>
-        <div class="date">${data.date_time}</div>
-      `;
-      list.prepend(plate); // Show newest record at the top
-    }
+        <!-- Recent Activity Section -->
+        <div class="activity-section">
+            <h2>📋 Recent Activity</h2>
+            <div class="activity-tabs">
+                <button class="tab-button active" onclick="showTab('entries')">Recent Entries</button>
+                <button class="tab-button" onclick="showTab('exits')">Recent Exits</button>
+            </div>
+            <div id="recentEntriesList" class="activity-list"></div>
+            <div id="recentExitsList" class="activity-list" style="display: none;"></div>
+        </div>
+    </div>
 
-    // Listen for new entries in the "numberplate" node
-    db.ref("numberplate").on("child_added", snapshot => {
-      addPlate(snapshot.key, snapshot.val());
-    });
-  </script>
+    <script>
+        // Replace with your actual Firebase project configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Global variables
+        let currentVehicles = {};
+        let recentEntries = [];
+        let recentExits = [];
+        let dailyChart, monthlyChart;
+
+        // DOM elements
+        const totalSlotsEl = document.getElementById('totalSlots');
+        const occupiedSlotsEl = document.getElementById('occupiedSlots');
+        const availableSlotsEl = document.getElementById('availableSlots');
+        const occupancyRateEl = document.getElementById('occupancyRate');
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+        const currentVehiclesListEl = document.getElementById('currentVehiclesList');
+        const recentEntriesListEl = document.getElementById('recentEntriesList');
+        const recentExitsListEl = document.getElementById('recentExitsList');
+        const searchInputEl = document.getElementById('searchInput');
+
+        // Initialize charts
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            };
+
+            dailyChart = new Chart(document.getElementById('dailyChart'), {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: '#2196f3',
+                        borderColor: '#1976d2',
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        borderColor: '#2196f3',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        // Update parking statistics
+        function updateParkingStats(stats) {
+            if (stats) {
+                totalSlotsEl.textContent = stats.total_slots || 0;
+                occupiedSlotsEl.textContent = stats.occupied_slots || 0;
+                availableSlotsEl.textContent = stats.available_slots || 0;
+                
+                const occupancyPercentage = stats.total_slots > 0 
+                    ? Math.round((stats.occupied_slots / stats.total_slots) * 100) 
+                    : 0;
+                occupancyRateEl.textContent = occupancyPercentage + '%';
+                
+                // Update occupancy rate color based on percentage
+                const occupancyCard = document.querySelector('.stat-card.occupancy');
+                occupancyCard.className = 'stat-card occupancy';
+                if (occupancyPercentage >= 90) {
+                    occupancyCard.classList.add('critical');
+                } else if (occupancyPercentage >= 70) {
+                    occupancyCard.classList.add('warning');
+                }
+                
+                if (stats.last_updated) {
+                    lastUpdatedEl.textContent = `Last Updated: ${formatDateTime(stats.last_updated)}`;
+                }
+            }
+        }
+
+        // Format date and time
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            return date.toLocaleString();
+        }
+
+        // Format date only
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        // Add current vehicle to list
+        function addCurrentVehicle(key, data) {
+            currentVehicles[key] = data;
+            displayCurrentVehicles();
+        }
+
+        // Remove current vehicle from list
+        function removeCurrentVehicle(key) {
+            if (currentVehicles[key]) {
+                // Add to recent exits
+                const exitData = {
+                    ...currentVehicles[key],
+                    exit_time: new Date().toISOString().replace('T', ' ').substr(0, 19)
+                };
+                recentExits.unshift(exitData);
+                if (recentExits.length > 50) recentExits.pop();
+                
+                delete currentVehicles[key];
+                displayCurrentVehicles();
+                displayRecentExits();
+            }
+        }
+
+        // Display current vehicles
+        function displayCurrentVehicles() {
+            const searchTerm = searchInputEl.value.toLowerCase();
+            const filteredVehicles = Object.entries(currentVehicles).filter(([key, data]) =>
+                data.number_plate.toLowerCase().includes(searchTerm)
+            );
+
+            currentVehiclesListEl.innerHTML = '';
+            
+            if (filteredVehicles.length === 0) {
+                currentVehiclesListEl.innerHTML = '<div class="empty-state">No vehicles found</div>';
+                return;
+            }
+
+            filteredVehicles.forEach(([key, data]) => {
+                const vehicleEl = document.createElement('div');
+                vehicleEl.className = 'plate current-vehicle';
+                
+                const entryTime = new Date(data.entry_time);
+                const now = new Date();
+                const duration = Math.floor((now - entryTime) / (1000 * 60)); // minutes
+                
+                let durationText = '';
+                if (duration < 60) {
+                    durationText = `${duration} min`;
+                } else if (duration < 1440) {
+                    durationText = `${Math.floor(duration / 60)}h ${duration % 60}m`;
+                } else {
+                    durationText = `${Math.floor(duration / 1440)}d ${Math.floor((duration % 1440) / 60)}h`;
+                }
+                
+                vehicleEl.innerHTML = `
+                    <div class="vehicle-info">
+                        <div class="plate-number">🚗 ${data.number_plate}</div>
+                        <div class="vehicle-details">
+                            <span class="entry-time">📅 Entered: ${formatDateTime(data.entry_time)}</span>
+                            <span class="duration">⏱️ Duration: ${durationText}</span>
+                        </div>
+                    </div>
+                    ${data.image ? `<div class="vehicle-image"><img src="data:image/jpeg;base64,${data.image}" alt="Vehicle Image" onclick="showImageModal(this.src)"></div>` : ''}
+                `;
+                
+                currentVehiclesListEl.appendChild(vehicleEl);
+            });
+        }
+
+        // Display recent entries
+        function displayRecentEntries() {
+            recentEntriesListEl.innerHTML = '';
+            
+            if (recentEntries.length === 0) {
+                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent entries</div>';
+                return;
+            }
+
+            recentEntries.slice(0, 20).forEach(data => {
+                const entryEl = document.createElement('div');
+                entryEl.className = 'plate activity-entry';
+                entryEl.innerHTML = `
+                    <div class="activity-info">
+                        <div class="plate-number">🟢 ${data.number_plate}</div>
+                        <div class="activity-time">📅 ${formatDateTime(data.entry_time)}</div>
+                        <div class="activity-status">Status: Vehicle Entered</div>
+                    </div>
+                `;
+                recentEntriesListEl.appendChild(entryEl);
+            });
+        }
+
+        // Display recent exits
+        function displayRecentExits() {
+            recentExitsListEl.innerHTML = '';
+            
+            if (recentExits.length === 0) {
+                recentExitsListEl.innerHTML = '<div class="empty-state">No recent exits</div>';
+                return;
+            }
+
+            recentExits.slice(0, 20).forEach(data => {
+                const exitEl = document.createElement('div');
+                exitEl.className = 'plate activity-exit';
+                exitEl.innerHTML = `
+                    <div class="activity-info">
+                        <div class="plate-number">🔴 ${data.number_plate}</div>
+                        <div class="activity-time">📅 ${formatDateTime(data.exit_time)}</div>
+                        <div class="activity-status">Status: Vehicle Exited</div>
+                    </div>
+                `;
+                recentExitsListEl.appendChild(exitEl);
+            });
+        }
+
+        // Update daily chart
+        function updateDailyChart(dailyData) {
+            const last7Days = [];
+            const counts = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                last7Days.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+                counts.push(dailyData[dateStr]?.count || 0);
+            }
+            
+            dailyChart.data.labels = last7Days;
+            dailyChart.data.datasets[0].data = counts;
+            dailyChart.update();
+        }
+
+        // Update monthly chart
+        function updateMonthlyChart(monthlyData) {
+            const last6Months = [];
+            const counts = [];
+            
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                const monthStr = date.toISOString().substr(0, 7);
+                last6Months.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+                counts.push(monthlyData[monthStr]?.count || 0);
+            }
+            
+            monthlyChart.data.labels = last6Months;
+            monthlyChart.data.datasets[0].data = counts;
+            monthlyChart.update();
+        }
+
+        // Show tab
+        function showTab(tab) {
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById('recentEntriesList').style.display = 'none';
+            document.getElementById('recentExitsList').style.display = 'none';
+            
+            if (tab === 'entries') {
+                document.getElementById('recentEntriesList').style.display = 'block';
+                buttons[0].classList.add('active');
+            } else {
+                document.getElementById('recentExitsList').style.display = 'block';
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Show image modal
+        function showImageModal(src) {
+            const modal = document.createElement('div');
+            modal.className = 'image-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <img src="${src}" alt="Vehicle Image">
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Search functionality
+        searchInputEl.addEventListener('input', displayCurrentVehicles);
+
+        // Firebase listeners
+        function setupFirebaseListeners() {
+            // Listen for parking statistics
+            db.ref('parking_stats').on('value', snapshot => {
+                updateParkingStats(snapshot.val());
+            });
+
+            // Listen for current vehicles
+            db.ref('vehicles').on('child_added', snapshot => {
+                const data = snapshot.val();
+                addCurrentVehicle(snapshot.key, data);
+                recentEntries.unshift(data);
+                if (recentEntries.length > 50) recentEntries.pop();
+                displayRecentEntries();
+            });
+
+            db.ref('vehicles').on('child_removed', snapshot => {
+                removeCurrentVehicle(snapshot.key);
+            });
+
+            // Listen for daily counts
+            db.ref('daily_counts').on('value', snapshot => {
+                updateDailyChart(snapshot.val() || {});
+            });
+
+            // Listen for monthly counts
+            db.ref('monthly_counts').on('value', snapshot => {
+                updateMonthlyChart(snapshot.val() || {});
+            });
+        }
+
+        // Initialize the application
+        function init() {
+            initCharts();
+            setupFirebaseListeners();
+            
+            // Update timestamp every minute
+            setInterval(() => {
+                const now = new Date();
+                if (!lastUpdatedEl.textContent.includes('Last Updated:')) {
+                    lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                }
+            }, 60000);
+        }
+
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
