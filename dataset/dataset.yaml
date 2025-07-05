@@ -1,6 +1,0 @@
-train: ParkingAreaManage/dataset/images/train
-val: ParkingAreaManage/dataset/images/val
-test: ParkingAreaManage/dataset/images/test
-
-nc: 1
-names: ['plate']
