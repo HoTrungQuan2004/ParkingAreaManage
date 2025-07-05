@@ -4,11 +4,11 @@
     <title>Smart Parking Management System</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="Style.css">
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -17,6 +17,7 @@
         <header class="header">
             <h1>🚗 Smart Parking Management System</h1>
             <div class="last-updated" id="lastUpdated">Last Updated: --</div>
+            <button onclick="refreshData()" style="margin-top: 10px; padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer;">🔄 Refresh Data</button>
         </header>
 
         <!-- Parking Statistics Dashboard -->
@@ -73,26 +74,112 @@
     </div>
 
     <script>
-        // Replace with your actual Firebase project configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        // Debug function to check Firebase configuration
+        function debugFirebaseConfig() {
+            console.log('=== Firebase Debug Information ===');
+            console.log('Firebase Config:', {
+                apiKey: firebaseConfig.apiKey ? '***' + firebaseConfig.apiKey.slice(-4) : 'MISSING',
+                authDomain: firebaseConfig.authDomain,
+                databaseURL: firebaseConfig.databaseURL,
+                projectId: firebaseConfig.projectId
+            });
+            
+            // Check if Firebase scripts loaded
+            console.log('Firebase app available:', typeof firebase !== 'undefined');
+            console.log('Firebase database available:', typeof firebase?.database === 'function');
+            
+            // Check network connectivity
+            if (navigator.onLine) {
+                console.log('Network: Online');
+            } else {
+                console.log('Network: Offline');
+            }
+        }
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        // Replace with your actual Firebase project configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtQFHllFrIKIWhZiflNkV-4fVxl6yg5m0",
+            authDomain: "liencesplayeai.firebaseapp.com",
+            databaseURL: "https://liencesplayeai-default-rtdb.firebaseio.com",
+            projectId: "liencesplayeai",
+            storageBucket: "liencesplayeai.firebasestorage.app",
+            messagingSenderId: "516014751151",
+            appId: "1:516014751151:web:68baec2887916762eb035a",
+            measurementId: "G-Z3M750GZQZ"
+        };
 
         // Global variables
         let currentVehicles = {};
         let recentEntries = [];
         let recentExits = [];
         let dailyChart, monthlyChart;
+        let db; // Firebase database reference
+
+        // Initialize Firebase when DOM is ready
+        function initializeFirebase() {
+            try {
+                debugFirebaseConfig();
+                
+                // Check if Firebase is loaded
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK not loaded. Check your internet connection.');
+                }
+                
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                console.log('Firebase initialized successfully');
+                
+                // Test database connection
+                db.ref('.info/connected').on('value', function(snapshot) {
+                    if (snapshot.val() === true) {
+                        console.log('Connected to Firebase Realtime Database');
+                        // Update connection status in UI
+                        const lastUpdatedEl = document.querySelector('#lastUpdated');
+                        if (lastUpdatedEl) {
+                            lastUpdatedEl.style.color = '#4caf50';
+                        }
+                    } else {
+                        console.log('Disconnected from Firebase Realtime Database');
+                        const lastUpdatedEl = document.querySelector('#lastUpdated');
+                        if (lastUpdatedEl) {
+                            lastUpdatedEl.style.color = '#f44336';
+                        }
+                    }
+                }, function(error) {
+                    console.error('Connection monitoring error:', error);
+                });
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    code: error.code,
+                    stack: error.stack
+                });
+                
+                // More specific error messages
+                let errorMessage = 'Failed to connect to Firebase. ';
+                if (error.message.includes('not loaded')) {
+                    errorMessage += 'Firebase SDK failed to load. Check your internet connection.';
+                } else if (error.code === 'app/invalid-api-key') {
+                    errorMessage += 'Invalid API key in configuration.';
+                } else if (error.code === 'app/invalid-app-argument') {
+                    errorMessage += 'Invalid Firebase configuration.';
+                } else {
+                    errorMessage += 'Please check your configuration and internet connection.';
+                }
+                
+                alert(errorMessage);
+                
+                // Update UI to show error
+                const lastUpdatedEl = document.querySelector('#lastUpdated');
+                if (lastUpdatedEl) {
+                    lastUpdatedEl.textContent = 'Firebase connection failed';
+                    lastUpdatedEl.style.color = '#f44336';
+                }
+            }
+        }
 
         // DOM elements
         const totalSlotsEl = document.getElementById('totalSlots');
@@ -220,9 +307,14 @@
 
         // Display current vehicles
         function displayCurrentVehicles() {
-            const searchTerm = searchInputEl.value.toLowerCase();
+            if (!searchInputEl || !currentVehiclesListEl) {
+                console.log('DOM elements not ready for displayCurrentVehicles');
+                return;
+            }
+
+            const searchTerm = searchInputEl.value ? searchInputEl.value.toLowerCase() : '';
             const filteredVehicles = Object.entries(currentVehicles).filter(([key, data]) =>
-                data.number_plate.toLowerCase().includes(searchTerm)
+                data.number_plate && data.number_plate.toLowerCase().includes(searchTerm)
             );
 
             currentVehiclesListEl.innerHTML = '';
@@ -266,6 +358,11 @@
 
         // Display recent entries
         function displayRecentEntries() {
+            if (!recentEntriesListEl) {
+                console.log('recentEntriesListEl not ready');
+                return;
+            }
+
             recentEntriesListEl.innerHTML = '';
             
             if (recentEntries.length === 0) {
@@ -274,21 +371,28 @@
             }
 
             recentEntries.slice(0, 20).forEach(data => {
-                const entryEl = document.createElement('div');
-                entryEl.className = 'plate activity-entry';
-                entryEl.innerHTML = `
-                    <div class="activity-info">
-                        <div class="plate-number">🟢 ${data.number_plate}</div>
-                        <div class="activity-time">📅 ${formatDateTime(data.entry_time)}</div>
-                        <div class="activity-status">Status: Vehicle Entered</div>
-                    </div>
-                `;
-                recentEntriesListEl.appendChild(entryEl);
+                if (data && data.number_plate && data.entry_time) {
+                    const entryEl = document.createElement('div');
+                    entryEl.className = 'plate activity-entry';
+                    entryEl.innerHTML = `
+                        <div class="activity-info">
+                            <div class="plate-number">🟢 ${data.number_plate}</div>
+                            <div class="activity-time">📅 ${formatDateTime(data.entry_time)}</div>
+                            <div class="activity-status">Status: Vehicle Entered</div>
+                        </div>
+                    `;
+                    recentEntriesListEl.appendChild(entryEl);
+                }
             });
         }
 
         // Display recent exits
         function displayRecentExits() {
+            if (!recentExitsListEl) {
+                console.log('recentExitsListEl not ready');
+                return;
+            }
+
             recentExitsListEl.innerHTML = '';
             
             if (recentExits.length === 0) {
@@ -297,16 +401,18 @@
             }
 
             recentExits.slice(0, 20).forEach(data => {
-                const exitEl = document.createElement('div');
-                exitEl.className = 'plate activity-exit';
-                exitEl.innerHTML = `
-                    <div class="activity-info">
-                        <div class="plate-number">🔴 ${data.number_plate}</div>
-                        <div class="activity-time">📅 ${formatDateTime(data.exit_time)}</div>
-                        <div class="activity-status">Status: Vehicle Exited</div>
-                    </div>
-                `;
-                recentExitsListEl.appendChild(exitEl);
+                if (data && data.number_plate && data.exit_time) {
+                    const exitEl = document.createElement('div');
+                    exitEl.className = 'plate activity-exit';
+                    exitEl.innerHTML = `
+                        <div class="activity-info">
+                            <div class="plate-number">🔴 ${data.number_plate}</div>
+                            <div class="activity-time">📅 ${formatDateTime(data.exit_time)}</div>
+                            <div class="activity-status">Status: Vehicle Exited</div>
+                        </div>
+                    `;
+                    recentExitsListEl.appendChild(exitEl);
+                }
             });
         }
 
@@ -320,12 +426,19 @@
                 date.setDate(date.getDate() - i);
                 const dateStr = date.toISOString().split('T')[0];
                 last7Days.push(date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
-                counts.push(dailyData[dateStr]?.count || 0);
+                
+                // Check if data exists for this date
+                const dayData = dailyData && dailyData[dateStr] ? dailyData[dateStr].count : 0;
+                counts.push(dayData);
             }
             
-            dailyChart.data.labels = last7Days;
-            dailyChart.data.datasets[0].data = counts;
-            dailyChart.update();
+            console.log('Updating daily chart with:', { labels: last7Days, data: counts });
+            
+            if (dailyChart) {
+                dailyChart.data.labels = last7Days;
+                dailyChart.data.datasets[0].data = counts;
+                dailyChart.update();
+            }
         }
 
         // Update monthly chart
@@ -338,12 +451,19 @@
                 date.setMonth(date.getMonth() - i);
                 const monthStr = date.toISOString().substr(0, 7);
                 last6Months.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-                counts.push(monthlyData[monthStr]?.count || 0);
+                
+                // Check if data exists for this month
+                const monthData = monthlyData && monthlyData[monthStr] ? monthlyData[monthStr].count : 0;
+                counts.push(monthData);
             }
             
-            monthlyChart.data.labels = last6Months;
-            monthlyChart.data.datasets[0].data = counts;
-            monthlyChart.update();
+            console.log('Updating monthly chart with:', { labels: last6Months, data: counts });
+            
+            if (monthlyChart) {
+                monthlyChart.data.labels = last6Months;
+                monthlyChart.data.datasets[0].data = counts;
+                monthlyChart.update();
+            }
         }
 
         // Show tab
@@ -376,52 +496,269 @@
             document.body.appendChild(modal);
         }
 
-        // Search functionality
-        searchInputEl.addEventListener('input', displayCurrentVehicles);
-
-        // Firebase listeners
-        function setupFirebaseListeners() {
-            // Listen for parking statistics
-            db.ref('parking_stats').on('value', snapshot => {
-                updateParkingStats(snapshot.val());
-            });
-
-            // Listen for current vehicles
-            db.ref('vehicles').on('child_added', snapshot => {
-                const data = snapshot.val();
-                addCurrentVehicle(snapshot.key, data);
-                recentEntries.unshift(data);
-                if (recentEntries.length > 50) recentEntries.pop();
-                displayRecentEntries();
-            });
-
-            db.ref('vehicles').on('child_removed', snapshot => {
-                removeCurrentVehicle(snapshot.key);
-            });
-
-            // Listen for daily counts
-            db.ref('daily_counts').on('value', snapshot => {
-                updateDailyChart(snapshot.val() || {});
-            });
-
-            // Listen for monthly counts
-            db.ref('monthly_counts').on('value', snapshot => {
-                updateMonthlyChart(snapshot.val() || {});
-            });
+        // Manual refresh function for testing
+        function refreshData() {
+            console.log('Manually refreshing data...');
+            if (db) {
+                // Manually trigger data refresh
+                db.ref('parking_stats').once('value').then(snapshot => {
+                    updateParkingStats(snapshot.val());
+                });
+                
+                db.ref('daily_counts').once('value').then(snapshot => {
+                    updateDailyChart(snapshot.val() || {});
+                });
+                
+                db.ref('monthly_counts').once('value').then(snapshot => {
+                    updateMonthlyChart(snapshot.val() || {});
+                });
+                
+                db.ref('vehicles').once('value').then(snapshot => {
+                    const vehicles = snapshot.val();
+                    if (vehicles) {
+                        currentVehicles = vehicles;
+                        displayCurrentVehicles();
+                    }
+                });
+            }
         }
 
         // Initialize the application
         function init() {
+            console.log('Initializing application...');
+            
+            // Initialize Firebase first
+            initializeFirebase();
+            
+            // Initialize charts
             initCharts();
-            setupFirebaseListeners();
+            
+            // Setup search functionality after DOM is ready
+            if (searchInputEl) {
+                searchInputEl.addEventListener('input', displayCurrentVehicles);
+                console.log('Search functionality initialized');
+            }
+            
+            // Test Firebase connection after a short delay
+            setTimeout(() => {
+                testFirebaseConnection();
+                setupFirebaseListeners();
+            }, 1000);
+            
+            // Initialize sample data after Firebase is ready
+            setTimeout(() => {
+                initializeSampleData();
+            }, 3000);
             
             // Update timestamp every minute
             setInterval(() => {
                 const now = new Date();
-                if (!lastUpdatedEl.textContent.includes('Last Updated:')) {
-                    lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Firebase connection failed')) {
+                    if (!lastUpdatedEl.textContent.includes('Connected to Firebase')) {
+                        lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                    }
                 }
             }, 60000);
+        }
+
+        // Firebase listeners
+        function setupFirebaseListeners() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+
+            try {
+                // Listen for parking statistics
+                db.ref('parking_stats').on('value', snapshot => {
+                    console.log('Parking stats received:', snapshot.val());
+                    updateParkingStats(snapshot.val());
+                }, error => {
+                    console.error('Error reading parking stats:', error);
+                });
+
+                // Listen for current vehicles
+                db.ref('vehicles').on('child_added', snapshot => {
+                    console.log('Vehicle added:', snapshot.key, snapshot.val());
+                    const data = snapshot.val();
+                    addCurrentVehicle(snapshot.key, data);
+                    recentEntries.unshift(data);
+                    if (recentEntries.length > 50) recentEntries.pop();
+                    displayRecentEntries();
+                }, error => {
+                    console.error('Error reading vehicles:', error);
+                });
+
+                db.ref('vehicles').on('child_removed', snapshot => {
+                    console.log('Vehicle removed:', snapshot.key);
+                    removeCurrentVehicle(snapshot.key);
+                }, error => {
+                    console.error('Error on vehicle removal:', error);
+                });
+
+                // Listen for daily counts
+                db.ref('daily_counts').on('value', snapshot => {
+                    console.log('Daily counts received:', snapshot.val());
+                    updateDailyChart(snapshot.val() || {});
+                }, error => {
+                    console.error('Error reading daily counts:', error);
+                });
+
+                // Listen for monthly counts
+                db.ref('monthly_counts').on('value', snapshot => {
+                    console.log('Monthly counts received:', snapshot.val());
+                    updateMonthlyChart(snapshot.val() || {});
+                }, error => {
+                    console.error('Error reading monthly counts:', error);
+                });
+
+                console.log('Firebase listeners set up successfully');
+            } catch (error) {
+                console.error('Error setting up Firebase listeners:', error);
+            }
+        }
+
+        // Test Firebase connection
+        function testFirebaseConnection() {
+            if (!db) {
+                console.error('Database not initialized for testing');
+                return;
+            }
+
+            console.log('Testing Firebase connection...');
+            
+            // Test read access to a simple path
+            db.ref('.info/serverTimeOffset').once('value')
+                .then(snapshot => {
+                    console.log('Firebase read test successful, server time offset:', snapshot.val());
+                    console.log('Testing database rules...');
+                    
+                    // Try to read the root to test permissions
+                    return db.ref('/').limitToFirst(1).once('value');
+                })
+                .then(snapshot => {
+                    console.log('Database rules test successful');
+                    
+                    // Update UI to show connection is working
+                    const lastUpdatedEl = document.getElementById('lastUpdated');
+                    if (lastUpdatedEl) {
+                        lastUpdatedEl.textContent = 'Connected to Firebase - ' + new Date().toLocaleString();
+                        lastUpdatedEl.style.color = '#4caf50';
+                    }
+                })
+                .catch(error => {
+                    console.error('Firebase connection test failed:', error);
+                    
+                    let errorMsg = 'Firebase connection failed: ';
+                    if (error.code === 'PERMISSION_DENIED') {
+                        errorMsg += 'Database rules deny access. Please check your Firebase security rules.';
+                        console.error('SOLUTION: Go to Firebase Console > Realtime Database > Rules and set:');
+                        console.error('{"rules": {".read": true, ".write": true}}');
+                    } else if (error.code === 'NETWORK_ERROR') {
+                        errorMsg += 'Network error. Check your internet connection.';
+                    } else {
+                        errorMsg += error.message;
+                    }
+                    
+                    const lastUpdatedEl = document.getElementById('lastUpdated');
+                    if (lastUpdatedEl) {
+                        lastUpdatedEl.textContent = errorMsg;
+                        lastUpdatedEl.style.color = '#f44336';
+                    }
+                });
+        }
+
+        // Initialize sample data for testing (if no real data exists)
+        function initializeSampleData() {
+            if (!db) return;
+            
+            console.log('Checking and initializing sample data...');
+            
+            // Initialize parking stats
+            db.ref('parking_stats').once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    console.log('No parking stats found, initializing sample data...');
+                    db.ref('parking_stats').set({
+                        total_slots: 100,
+                        occupied_slots: 15,
+                        available_slots: 85,
+                        last_updated: new Date().toISOString()
+                    });
+                }
+            }).catch(error => {
+                console.error('Error checking parking stats:', error);
+            });
+
+            // Initialize sample vehicles
+            db.ref('vehicles').once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    console.log('No vehicles found, initializing sample vehicles...');
+                    
+                    const sampleVehicles = {
+                        'vehicle_1': {
+                            number_plate: 'ABC-123',
+                            entry_time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+                        },
+                        'vehicle_2': {
+                            number_plate: 'XYZ-789',
+                            entry_time: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
+                        },
+                        'vehicle_3': {
+                            number_plate: 'DEF-456',
+                            entry_time: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+                        }
+                    };
+                    
+                    db.ref('vehicles').set(sampleVehicles);
+                }
+            }).catch(error => {
+                console.error('Error checking vehicles:', error);
+            });
+
+            // Initialize daily counts for the last 7 days
+            db.ref('daily_counts').once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    console.log('No daily counts found, initializing sample daily data...');
+                    
+                    const dailyCounts = {};
+                    for (let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        const dateStr = date.toISOString().split('T')[0];
+                        dailyCounts[dateStr] = {
+                            count: Math.floor(Math.random() * 50) + 10, // Random count between 10-60
+                            date: dateStr
+                        };
+                    }
+                    
+                    db.ref('daily_counts').set(dailyCounts);
+                }
+            }).catch(error => {
+                console.error('Error checking daily counts:', error);
+            });
+
+            // Initialize monthly counts for the last 6 months
+            db.ref('monthly_counts').once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    console.log('No monthly counts found, initializing sample monthly data...');
+                    
+                    const monthlyCounts = {};
+                    for (let i = 5; i >= 0; i--) {
+                        const date = new Date();
+                        date.setMonth(date.getMonth() - i);
+                        const monthStr = date.toISOString().substr(0, 7); // YYYY-MM format
+                        monthlyCounts[monthStr] = {
+                            count: Math.floor(Math.random() * 800) + 200, // Random count between 200-1000
+                            month: monthStr
+                        };
+                    }
+                    
+                    db.ref('monthly_counts').set(monthlyCounts);
+                }
+            }).catch(error => {
+                console.error('Error checking monthly counts:', error);
+            });
         }
 
         // Start the application when DOM is loaded
