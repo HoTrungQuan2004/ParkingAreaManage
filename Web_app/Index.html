@@ -43,18 +43,18 @@
         <!-- Charts Section -->
         <div class="charts-section">
             <div class="chart-container">
-                <h3>📊 Daily Vehicle Count (Last 7 Days)</h3>
+                <h3> Daily Vehicle Count (Last 7 Days)</h3>
                 <canvas id="dailyChart"></canvas>
             </div>
             <div class="chart-container">
-                <h3>📈 Monthly Vehicle Count (Last 6 Months)</h3>
+                <h3> Monthly Vehicle Count (Last 6 Months)</h3>
                 <canvas id="monthlyChart"></canvas>
             </div>
         </div>
 
         <!-- Current Vehicles Section -->
         <div class="vehicles-section">
-            <h2>🚙 Currently Parked Vehicles</h2>
+            <h2> Currently Parked Vehicles</h2>
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="🔍 Search by license plate..." />
             </div>
@@ -63,7 +63,7 @@
 
         <!-- Recent Activity Section -->
         <div class="activity-section">
-            <h2>📋 Recent Activity</h2>
+            <h2> Recent Activity</h2>
             <div class="activity-tabs">
                 <button class="tab-button active" onclick="showTab('entries')">Recent Entries</button>
                 <button class="tab-button" onclick="showTab('exits')">Recent Exits</button>
@@ -110,14 +110,14 @@
         // Replace with your actual Firebase project configuration
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-            apiKey: "Your apiKey",
-            authDomain: "yourdomain.firebaseapp.com",
-            databaseURL: "Your database URL",
-            projectId: "Your project ID",
-            storageBucket: "yourstoragebucket.firebasestorage.app",
-            messagingSenderId: "YourSenderID",
-            appId: "Your appID",
-            measurementId: "Your mearsurement ID"
+            apiKey: "YourapiKey",
+            authDomain: "yourauthDomain.firebaseapp.com",
+            databaseURL: "your databaseURL",
+            projectId: "Your projectId",
+            storageBucket: "yourstrorageBucket.firebasestorage.app",
+            messagingSenderId: "YourSenderId",
+            appId: "YourappId",
+            measurementId: "Your measurementId"
         };
 
         // Global variables
@@ -367,7 +367,7 @@
             currentVehiclesListEl.innerHTML = '';
             
             if (filteredVehicles.length === 0) {
-                const emptyMessage = searchTerm ? 'No vehicles found matching your search' : 'No vehicles currently parked';
+                const emptyMessage = searchTerm ? 'No vehicles found matching your search' : 'No vehicles currently parked (waiting for ESP32 data...)';
                 currentVehiclesListEl.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
                 return;
             }
@@ -433,10 +433,10 @@
                 
                 vehicleEl.innerHTML = `
                     <div class="vehicle-info">
-                        <div class="plate-number">🚗 ${plateNumber}</div>
+                        <div class="plate-number"> ${plateNumber}</div>
                         <div class="vehicle-details">
-                            <span class="entry-time">📅 Entered: ${formattedEntryTime}</span>
-                            <span class="duration">⏱️ Duration: ${durationText}</span>
+                            <span class="entry-time"> Entered: ${formattedEntryTime}</span>
+                            <span class="duration">⏱Duration: ${durationText}</span>
                         </div>
                     </div>
                     ${data.image ? `<div class="vehicle-image"><img src="data:image/jpeg;base64,${data.image}" alt="Vehicle Image" onclick="showImageModal(this.src)" style="max-width: 100px; max-height: 100px; cursor: pointer; border-radius: 5px;"></div>` : ''}
@@ -456,7 +456,7 @@
             recentEntriesListEl.innerHTML = '';
             
             if (recentEntries.length === 0) {
-                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent entries</div>';
+                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent entries (waiting for ESP32 data...)</div>';
                 return;
             }
 
@@ -502,8 +502,8 @@
                     
                     entryEl.innerHTML = `
                         <div class="activity-info">
-                            <div class="plate-number">🟢 ${plateNumber}</div>
-                            <div class="activity-time">📅 ${entryTime.toLocaleString()}</div>
+                            <div class="plate-number"> ${plateNumber}</div>
+                            <div class="activity-time"> ${entryTime.toLocaleString()}</div>
                             <div class="activity-status">Status: Vehicle Entered</div>
                         </div>
                     `;
@@ -522,7 +522,7 @@
             recentExitsListEl.innerHTML = '';
             
             if (recentExits.length === 0) {
-                recentExitsListEl.innerHTML = '<div class="empty-state">No recent exits</div>';
+                recentExitsListEl.innerHTML = '<div class="empty-state">No recent exits (waiting for ESP32 data...)</div>';
                 return;
             }
 
@@ -532,8 +532,8 @@
                     exitEl.className = 'plate activity-exit';
                     exitEl.innerHTML = `
                         <div class="activity-info">
-                            <div class="plate-number">🔴 ${data.number_plate}</div>
-                            <div class="activity-time">📅 ${formatDateTime(data.exit_time)}</div>
+                            <div class="plate-number"> ${data.number_plate}</div>
+                            <div class="activity-time"> ${formatDateTime(data.exit_time)}</div>
                             <div class="activity-status">Status: Vehicle Exited</div>
                         </div>
                     `;
@@ -592,320 +592,236 @@
             }
         }
 
-        // Show tab
-        function showTab(tab) {
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById('recentEntriesList').style.display = 'none';
-            document.getElementById('recentExitsList').style.display = 'none';
-            
-            if (tab === 'entries') {
-                document.getElementById('recentEntriesList').style.display = 'block';
-                buttons[0].classList.add('active');
-            } else {
-                document.getElementById('recentExitsList').style.display = 'block';
-                buttons[1].classList.add('active');
-            }
-        }
-
-        // Show image modal
-        function showImageModal(src) {
-            const modal = document.createElement('div');
-            modal.className = 'image-modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <img src="${src}" alt="Vehicle Image">
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // Manual refresh function for testing
-        function refreshData() {
-            console.log('Manually refreshing data...');
-            
-            if (!db) {
-                console.error('Database not initialized for refresh');
-                alert('Database not connected. Please check your Firebase configuration.');
-                return;
-            }
-            
-            // Show loading state
-            const refreshButton = event.target;
-            const originalText = refreshButton.innerHTML;
-            refreshButton.innerHTML = '🔄 Refreshing...';
-            refreshButton.disabled = true;
-            
-            // Refresh all data from Firebase
-            loadInitialData();
-            
-            // Reset button after 2 seconds
-            setTimeout(() => {
-                refreshButton.innerHTML = originalText;
-                refreshButton.disabled = false;
-                
-                // Update last updated time
-                const lastUpdatedEl = document.getElementById('lastUpdated');
-                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed')) {
-                    lastUpdatedEl.textContent = `Last Updated: ${new Date().toLocaleString()}`;
-                }
-                
-                console.log('Data refresh completed');
-            }, 2000);
-        }
-
-        // Initialize the application
-        function init() {
-            console.log('Initializing Smart Parking Management System...');
-            
-            // Initialize Firebase first
-            initializeFirebase();
-            
-            // Initialize charts
-            initCharts();
-            
-            // Setup search functionality after DOM is ready
-            if (searchInputEl) {
-                searchInputEl.addEventListener('input', displayCurrentVehicles);
-                console.log('Search functionality initialized');
-            } else {
-                console.warn('Search input element not found');
-            }
-            
-            // Test Firebase connection and setup listeners after initialization
-            setTimeout(() => {
-                testFirebaseConnection();
-                setupFirebaseListeners();
-            }, 1500);
-            
-            // Initialize sample data if needed (for demo purposes)
-            setTimeout(() => {
-                initializeSampleData();
-            }, 3000);
-            
-            // Auto-refresh data every 30 seconds
-            setInterval(() => {
-                if (db) {
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
-                }
-            }, 30000);
-            
-            // Update timestamp display every minute
-            setInterval(() => {
-                const now = new Date();
-                const lastUpdatedEl = document.getElementById('lastUpdated');
-                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed') && !lastUpdatedEl.textContent.includes('connection failed')) {
-                    if (!lastUpdatedEl.textContent.includes('Connected to Firebase')) {
-                        lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
-                    }
-                }
-            }, 60000);
-            
-            console.log('Application initialization completed');
-        }
-
-        // Clear sample data function
-        function clearSampleDataIfNeeded() {
-            if (!db) return;
-            
-            // Check if we have sample data patterns
-            db.ref('numberplate').once('value').then(snapshot => {
-                const data = snapshot.val();
-                if (data) {
-                    const keys = Object.keys(data);
-                    const sampleKeys = ['sample-001', 'sample-002', 'sample-003', 'sample-004'];
-                    const hasSampleData = sampleKeys.some(sampleKey => keys.includes(sampleKey));
-                    
-                    if (hasSampleData && keys.length > sampleKeys.length) {
-                        console.log('Real data detected, clearing sample data...');
-                        // Remove sample data
-                        sampleKeys.forEach(sampleKey => {
-                            if (data[sampleKey]) {
-                                db.ref(`numberplate/${sampleKey}`).remove();
-                            }
-                        });
-                    }
-                }
-            }).catch(error => {
-                console.error('Error checking for sample data:', error);
-            });
-        }
-
-        // Firebase listeners
-        function setupFirebaseListeners() {
+        // Update parking statistics from Firebase parking_stats
+        function updateParkingStatsFromFirebase() {
             if (!db) {
                 console.error('Database not initialized');
                 return;
             }
 
-            try {
-                // Listen for new numberplate entries
-                db.ref('numberplate').on('child_added', snapshot => {
-                    console.log('New numberplate detected:', snapshot.key, snapshot.val());
-                    const recordId = snapshot.key; // Firebase auto-generated ID
-                    const data = snapshot.val();
+            db.ref('parking_stats').once('value').then(snapshot => {
+                const statsData = snapshot.val();
+                
+                if (statsData) {
+                    console.log('Firebase parking stats:', statsData);
                     
-                    // Log the raw data for debugging
-                    console.log('Raw ESP32 data:', {
-                        recordId: recordId,
-                        date_time: data.date_time,
-                        number_plate: data.number_plate,
-                        fullData: data
+                    updateParkingStats({
+                        total_slots: statsData.total_slots || PARKING_CONFIG.TOTAL_SLOTS,
+                        occupied_slots: statsData.occupied_slots || 0,
+                        available_slots: statsData.available_slots || PARKING_CONFIG.TOTAL_SLOTS,
+                        last_updated: statsData.last_updated || new Date().toISOString()
                     });
-                    
-                    // Handle ESP32 data structure - use the actual format
-                    const plateNumber = data.number_plate;
-                    const timestamp = data.date_time;
-                    
-                    if (!plateNumber || !timestamp) {
-                        console.warn('Missing required data - plate:', plateNumber, 'timestamp:', timestamp);
-                        return;
-                    }
-                    
-                    // Convert date_time format to proper timestamp
-                    let entryTime;
-                    try {
-                        // Handle "2025-05-23 22:54:54" format
-                        entryTime = new Date(timestamp.replace(' ', 'T') + 'Z'); // Add 'Z' for UTC
-                        if (isNaN(entryTime.getTime())) {
-                            entryTime = new Date(timestamp); // Try direct parsing
-                        }
-                    } catch (error) {
-                        console.error('Error parsing date_time:', timestamp, error);
-                        return;
-                    }
-                    
-                    const entryData = {
-                        recordId: recordId,
-                        number_plate: plateNumber,
-                        entry_time: entryTime.toISOString(),
-                        date_time: timestamp,
-                        timestamp: entryTime.toISOString(),
-                        detected_time: entryTime.toISOString(),
-                        image: data.image || null
-                    };
-                    
-                    console.log('Processed entry data:', entryData);
-                    
-                    // Clear sample data if real data is coming in
-                    clearSampleDataIfNeeded();
-                    
-                    // Use recordId as key since multiple vehicles can have same plate
-                    addCurrentVehicle(recordId, entryData);
-                    
-                    // Add to recent entries
-                    recentEntries.unshift(entryData);
-                    if (recentEntries.length > 50) recentEntries.pop();
-                    
-                    // Update displays
-                    displayRecentEntries();
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
-                    
-                    console.log('Vehicle added to parking:', plateNumber);
-                }, error => {
-                    console.error('Error reading numberplate entries:', error);
+                } else {
+                    // Fallback to counting vehicles if no parking_stats
+                    updateParkingStatsFromVehicles();
+                }
+            }).catch(error => {
+                console.error('Error reading parking_stats:', error);
+                // Fallback to counting vehicles
+                updateParkingStatsFromVehicles();
+            });
+        }
+
+        // Fallback: Update parking statistics based on vehicles count
+        function updateParkingStatsFromVehicles() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+
+            db.ref('vehicles').once('value').then(snapshot => {
+                const vehiclesData = snapshot.val();
+                let occupiedCount = 0;
+                
+                if (vehiclesData) {
+                    // Count all vehicles entries as currently parked vehicles
+                    occupiedCount = Object.keys(vehiclesData).length;
+                }
+                
+                const totalSlots = PARKING_CONFIG.TOTAL_SLOTS;
+                const availableSlots = Math.max(0, totalSlots - occupiedCount);
+                
+                console.log('Updating parking stats from vehicles count:', {
+                    total: totalSlots,
+                    occupied: occupiedCount,
+                    available: availableSlots
                 });
 
-                // Listen for numberplate data changes
-                db.ref('numberplate').on('child_changed', snapshot => {
-                    console.log('Numberplate data updated:', snapshot.key, snapshot.val());
-                    const recordId = snapshot.key;
-                    const data = snapshot.val();
-                    
-                    // Update existing vehicle data using recordId
-                    if (currentVehicles[recordId]) {
-                        const plateNumber = data.number_plate;
-                        const timestamp = data.date_time;
-                        
-                        if (plateNumber && timestamp) {
-                            let entryTime;
-                            try {
-                                entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
-                                if (isNaN(entryTime.getTime())) {
-                                    entryTime = new Date(timestamp);
-                                }
-                            } catch (error) {
-                                console.error('Error parsing updated date_time:', timestamp, error);
+                updateParkingStats({
+                    total_slots: totalSlots,
+                    occupied_slots: occupiedCount,
+                    available_slots: availableSlots,
+                    last_updated: new Date().toISOString()
+                });
+            }).catch(error => {
+                console.error('Error updating parking stats from vehicles:', error);
+                // Show default values on error
+                updateParkingStats({
+                    total_slots: PARKING_CONFIG.TOTAL_SLOTS,
+                    occupied_slots: 0,
+                    available_slots: PARKING_CONFIG.TOTAL_SLOTS,
+                    last_updated: new Date().toISOString()
+                });
+            });
+        }
+
+        // Update charts based on Firebase data
+        function updateChartsFromFirebase() {
+            updateDailyChartFromFirebase();
+            updateMonthlyChartFromFirebase();
+        }
+
+        // Update daily chart from daily_counts and monthly chart from monthly_counts
+        function updateDailyChartFromFirebase() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+
+            db.ref('daily_counts').once('value').then(snapshot => {
+                const dailyCountsData = snapshot.val();
+                
+                console.log('Firebase daily_counts data:', dailyCountsData);
+                
+                if (dailyCountsData) {
+                    // Convert Firebase daily_counts data to chart format
+                    const chartData = {};
+                    Object.keys(dailyCountsData).forEach(dateKey => {
+                        // dateKey is in format "2025-05-23"
+                        const dayData = dailyCountsData[dateKey];
+                        chartData[dateKey] = { 
+                            count: dayData.count || 0,
+                            date: dayData.date || dateKey
+                        };
+                    });
+                    updateDailyChart(chartData);
+                } else {
+                    console.log('No daily_counts data found - waiting for ESP32 data');
+                    updateDailyChart({});
+                }
+            }).catch(error => {
+                console.error('Error updating daily chart from daily_counts:', error);
+                updateDailyChart({});
+            });
+        }
+
+        // Update monthly chart from monthly_counts
+        function updateMonthlyChartFromFirebase() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+
+            db.ref('monthly_counts').once('value').then(snapshot => {
+                const monthlyCountsData = snapshot.val();
+                
+                console.log('Firebase monthly_counts data:', monthlyCountsData);
+                
+                if (monthlyCountsData) {
+                    // Use Firebase monthly_counts data directly
+                    const chartData = {};
+                    Object.keys(monthlyCountsData).forEach(monthKey => {
+                        // monthKey is in format "2025-05"
+                        const monthData = monthlyCountsData[monthKey];
+                        chartData[monthKey] = { 
+                            count: monthData.count || 0,
+                            month: monthData.month || monthData.Month || monthKey
+                        };
+                    });
+                    updateMonthlyChart(chartData);
+                } else {
+                    console.log('No monthly_counts data found - waiting for ESP32 data, falling back to daily_counts aggregation');
+                    updateMonthlyChartFromDailyCounts();
+                }
+            }).catch(error => {
+                console.error('Error updating monthly chart from monthly_counts:', error);
+                updateMonthlyChart({});
+            });
+        }
+
+        // Update monthly chart based on daily_counts data
+        function updateMonthlyChartFromDailyCounts() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
+
+            db.ref('daily_counts').once('value').then(snapshot => {
+                const dailyCountsData = snapshot.val();
+                const monthlyCounts = {};
+
+                if (dailyCountsData) {
+                    // Aggregate daily counts into monthly counts
+                    Object.keys(dailyCountsData).forEach(dateKey => {
+                        try {
+                            // dateKey is in format "2025-05-23"
+                            const date = new Date(dateKey);
+                            if (isNaN(date.getTime())) {
+                                console.warn('Invalid date in daily_counts:', dateKey);
                                 return;
                             }
                             
-                            currentVehicles[recordId] = {
-                                recordId: recordId,
-                                number_plate: plateNumber,
-                                entry_time: entryTime.toISOString(),
-                                date_time: timestamp,
-                                timestamp: entryTime.toISOString(),
-                                detected_time: entryTime.toISOString(),
-                                image: data.image || null
-                            };
-                            displayCurrentVehicles();
+                            const monthKey = dateKey.substring(0, 7); // "2025-05" format
+                            const count = dailyCountsData[dateKey].count || 1;
+                            
+                            if (!monthlyCounts[monthKey]) {
+                                monthlyCounts[monthKey] = { count: 0 };
+                            }
+                            monthlyCounts[monthKey].count += count;
+                        } catch (error) {
+                            console.error('Error processing daily count for monthly chart:', dateKey, error);
                         }
-                    }
-                }, error => {
-                    console.error('Error on numberplate data change:', error);
-                });
+                    });
+                }
 
-                // Listen for numberplate removals (vehicle exits)
-                db.ref('numberplate').on('child_removed', snapshot => {
-                    console.log('Vehicle exited:', snapshot.key);
-                    removeCurrentVehicle(snapshot.key); // Use recordId
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
-                }, error => {
-                    console.error('Error on numberplate removal:', error);
-                });
-
-                // Initial data load
-                loadInitialData();
-
-                console.log('Firebase listeners set up successfully for numberplate folder');
-            } catch (error) {
-                console.error('Error setting up Firebase listeners:', error);
-            }
+                console.log('Monthly counts for chart:', monthlyCounts);
+                updateMonthlyChart(monthlyCounts);
+            }).catch(error => {
+                console.error('Error updating monthly chart from daily_counts:', error);
+                updateMonthlyChart({});
+            });
         }
 
-        // Load initial data from Firebase
-        function loadInitialData() {
+        // Load initial data from Firebase vehicles structure (ESP32 data)
+        function loadInitialDataFromVehicles() {
             if (!db) return;
             
-            console.log('Loading initial data from Firebase...');
+            console.log('Loading real-time vehicle data from ESP32 via Firebase...');
             
-            db.ref('numberplate').once('value').then(snapshot => {
-                const data = snapshot.val();
-                console.log('Initial numberplate data loaded:', data);
+            db.ref('vehicles').once('value').then(snapshot => {
+                const vehiclesData = snapshot.val();
+                console.log('Initial vehicles data loaded:', vehiclesData);
                 
-                if (data) {
+                if (vehiclesData) {
                     // Clear existing data
                     currentVehicles = {};
                     recentEntries = [];
                     
-                    // Process each vehicle
-                    Object.entries(data).forEach(([recordId, vehicleData]) => {
-                        // Handle the ESP32 format: recordId -> {date_time, number_plate}
+                    // Process each vehicle entry
+                    Object.entries(vehiclesData).forEach(([recordId, vehicleData]) => {
                         const plateNumber = vehicleData.number_plate;
-                        const timestamp = vehicleData.date_time;
+                        const timestamp = vehicleData.entry_time;
                         
                         if (!plateNumber || !timestamp) {
-                            console.warn('Skipping record with missing data:', recordId, vehicleData);
+                            console.warn('Skipping vehicle record with missing data:', recordId, vehicleData);
                             return;
                         }
                         
-                        // Convert date_time format to proper timestamp
+                        // Parse timestamp
                         let entryTime;
                         try {
-                            entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
-                            if (isNaN(entryTime.getTime())) {
+                            // Handle "2025-05-23 22:54:54" format or ISO format
+                            if (timestamp.includes(' ') && !timestamp.includes('T')) {
+                                entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
+                            } else {
                                 entryTime = new Date(timestamp);
                             }
+                            
                             if (isNaN(entryTime.getTime())) {
                                 throw new Error('Invalid date format');
                             }
                         } catch (error) {
-                            console.error('Error parsing date_time for record:', recordId, timestamp, error);
+                            console.error('Error parsing entry_time for vehicle record:', recordId, timestamp, error);
                             return;
                         }
                         
@@ -919,7 +835,7 @@
                             image: vehicleData.image || null
                         };
                         
-                        // Add to current vehicles using recordId as key
+                        // Add to current vehicles (all vehicle entries are currently parked)
                         currentVehicles[recordId] = entryData;
                         
                         // Add to recent entries
@@ -932,287 +848,222 @@
                     // Update all displays
                     displayCurrentVehicles();
                     displayRecentEntries();
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
+                    updateParkingStatsFromFirebase();
+                    updateChartsFromFirebase();
                     
-                    console.log('Initial data loaded successfully. Current vehicles:', Object.keys(currentVehicles).length);
+                    console.log('Initial vehicles data loaded successfully. Current vehicles:', Object.keys(currentVehicles).length);
                 } else {
-                    console.log('No initial data found in numberplate folder');
-                    // Initialize empty displays
+                    console.log('No vehicle data found in Firebase - waiting for ESP32 to send data');
+                    // Initialize empty displays with waiting message
                     displayCurrentVehicles();
                     displayRecentEntries();
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
+                    updateParkingStatsFromFirebase();
+                    updateChartsFromFirebase();
                 }
             }).catch(error => {
-                console.error('Error loading initial data:', error);
+                console.error('Error loading initial vehicles data:', error);
             });
         }
 
-        // Update parking statistics based on numberplate data
-        function updateParkingStatsFromNumberplate() {
+        // Legacy functions removed - now using vehicles, daily_counts, monthly_counts, and parking_stats structure
+
+        // Setup Firebase listeners for real-time updates from ESP32
+        function setupFirebaseListeners() {
             if (!db) {
-                console.error('Database not initialized');
+                console.error('Database not initialized for listeners');
                 return;
             }
-
-            db.ref('numberplate').once('value').then(snapshot => {
-                const numberplateData = snapshot.val();
-                const occupiedSlots = numberplateData ? Object.keys(numberplateData).length : 0;
-                const totalSlots = PARKING_CONFIG.TOTAL_SLOTS; // Configurable total slot count
-                const availableSlots = Math.max(0, totalSlots - occupiedSlots);
-                
-                console.log('Updating parking stats:', {
-                    total: totalSlots,
-                    occupied: occupiedSlots,
-                    available: availableSlots
-                });
-
-                updateParkingStats({
-                    total_slots: totalSlots,
-                    occupied_slots: occupiedSlots,
-                    available_slots: availableSlots,
-                    last_updated: new Date().toISOString()
-                });
-            }).catch(error => {
-                console.error('Error updating parking stats from numberplate:', error);
-                // Show default values on error
-                updateParkingStats({
-                    total_slots: PARKING_CONFIG.TOTAL_SLOTS,
-                    occupied_slots: 0,
-                    available_slots: PARKING_CONFIG.TOTAL_SLOTS,
-                    last_updated: new Date().toISOString()
-                });
-            });
-        }
-
-        // Update charts based on numberplate data
-        function updateChartsFromNumberplate() {
-            updateDailyChartFromNumberplate();
-            updateMonthlyChartFromNumberplate();
-        }
-
-        // Update daily chart based on numberplate data
-        function updateDailyChartFromNumberplate() {
-            if (!db) {
-                console.error('Database not initialized');
-                return;
-            }
-
-            db.ref('numberplate').once('value').then(snapshot => {
-                const numberplateData = snapshot.val();
-                const dailyCounts = {};
-
-                if (numberplateData) {
-                    Object.values(numberplateData).forEach(data => {
-                        // Handle ESP32 format with date_time field
-                        let entryTime;
-                        try {
-                            if (data.date_time) {
-                                // Convert "2025-05-23 22:54:54" to proper Date
-                                entryTime = new Date(data.date_time.replace(' ', 'T') + 'Z');
-                                if (isNaN(entryTime.getTime())) {
-                                    entryTime = new Date(data.date_time);
-                                }
-                            } else if (data.timestamp) {
-                                entryTime = new Date(data.timestamp);
-                            } else if (data.entry_time) {
-                                entryTime = new Date(data.entry_time);
-                            } else if (data.detected_time) {
-                                entryTime = new Date(data.detected_time);
-                            }
-                            
-                            // Validate the parsed date
-                            if (!entryTime || isNaN(entryTime.getTime())) {
-                                console.warn('Invalid timestamp in daily chart data:', data);
-                                return;
-                            }
-                        } catch (error) {
-                            console.error('Error parsing timestamp for daily chart:', error, data);
-                            return;
-                        }
-                        
-                        const entryDate = entryTime.toISOString().split('T')[0];
-                        dailyCounts[entryDate] = (dailyCounts[entryDate] || { count: 0 });
-                        dailyCounts[entryDate].count = (dailyCounts[entryDate].count || 0) + 1;
+            
+            console.log('Setting up real-time Firebase listeners for ESP32 data...');
+            
+            try {
+                // Listen for new vehicle entries
+                db.ref('vehicles').on('child_added', snapshot => {
+                    console.log('New vehicle detected:', snapshot.key, snapshot.val());
+                    
+                    const recordId = snapshot.key;
+                    const data = snapshot.val();
+                    
+                    console.log('Raw vehicle data:', {
+                        recordId: recordId,
+                        data: data
                     });
-                }
-
-                console.log('Daily counts for chart:', dailyCounts);
-                updateDailyChart(dailyCounts);
-            }).catch(error => {
-                console.error('Error updating daily chart from numberplate:', error);
-                updateDailyChart({});
-            });
-        }
-
-        // Update monthly chart based on numberplate data
-        function updateMonthlyChartFromNumberplate() {
-            if (!db) {
-                console.error('Database not initialized');
-                return;
-            }
-
-            db.ref('numberplate').once('value').then(snapshot => {
-                const numberplateData = snapshot.val();
-                const monthlyCounts = {};
-
-                if (numberplateData) {
-                    Object.values(numberplateData).forEach(data => {
-                        // Handle ESP32 format with date_time field
-                        let entryTime;
-                        try {
-                            if (data.date_time) {
-                                // Convert "2025-05-23 22:54:54" to proper Date
-                                entryTime = new Date(data.date_time.replace(' ', 'T') + 'Z');
-                                if (isNaN(entryTime.getTime())) {
-                                    entryTime = new Date(data.date_time);
-                                }
-                            } else if (data.timestamp) {
-                                entryTime = new Date(data.timestamp);
-                            } else if (data.entry_time) {
-                                entryTime = new Date(data.entry_time);
-                            } else if (data.detected_time) {
-                                entryTime = new Date(data.detected_time);
-                            }
-                            
-                            // Validate the parsed date
-                            if (!entryTime || isNaN(entryTime.getTime())) {
-                                console.warn('Invalid timestamp in monthly chart data:', data);
-                                return;
-                            }
-                        } catch (error) {
-                            console.error('Error parsing timestamp for monthly chart:', error, data);
-                            return;
-                        }
-                        
-                        const entryMonth = entryTime.toISOString().substr(0, 7);
-                        monthlyCounts[entryMonth] = (monthlyCounts[entryMonth] || { count: 0 });
-                        monthlyCounts[entryMonth].count = (monthlyCounts[entryMonth].count || 0) + 1;
-                    });
-                }
-
-                console.log('Monthly counts for chart:', monthlyCounts);
-                updateMonthlyChart(monthlyCounts);
-            }).catch(error => {
-                console.error('Error updating monthly chart from numberplate:', error);
-                updateMonthlyChart({});
-            });
-        }
-
-        // Show tab
-        function showTab(tab) {
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById('recentEntriesList').style.display = 'none';
-            document.getElementById('recentExitsList').style.display = 'none';
-            
-            if (tab === 'entries') {
-                document.getElementById('recentEntriesList').style.display = 'block';
-                buttons[0].classList.add('active');
-            } else {
-                document.getElementById('recentExitsList').style.display = 'block';
-                buttons[1].classList.add('active');
-            }
-        }
-
-        // Show image modal
-        function showImageModal(src) {
-            const modal = document.createElement('div');
-            modal.className = 'image-modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                    <img src="${src}" alt="Vehicle Image">
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        // Manual refresh function for testing
-        function refreshData() {
-            console.log('Manually refreshing data...');
-            
-            if (!db) {
-                console.error('Database not initialized for refresh');
-                alert('Database not connected. Please check your Firebase configuration.');
-                return;
-            }
-            
-            // Show loading state
-            const refreshButton = event.target;
-            const originalText = refreshButton.innerHTML;
-            refreshButton.innerHTML = '🔄 Refreshing...';
-            refreshButton.disabled = true;
-            
-            // Refresh all data from Firebase
-            loadInitialData();
-            
-            // Reset button after 2 seconds
-            setTimeout(() => {
-                refreshButton.innerHTML = originalText;
-                refreshButton.disabled = false;
-                
-                // Update last updated time
-                const lastUpdatedEl = document.getElementById('lastUpdated');
-                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed')) {
-                    lastUpdatedEl.textContent = `Last Updated: ${new Date().toLocaleString()}`;
-                }
-                
-                console.log('Data refresh completed');
-            }, 2000);
-        }
-
-        // Initialize the application
-        function init() {
-            console.log('Initializing Smart Parking Management System...');
-            
-            // Initialize Firebase first
-            initializeFirebase();
-            
-            // Initialize charts
-            initCharts();
-            
-            // Setup search functionality after DOM is ready
-            if (searchInputEl) {
-                searchInputEl.addEventListener('input', displayCurrentVehicles);
-                console.log('Search functionality initialized');
-            } else {
-                console.warn('Search input element not found');
-            }
-            
-            // Test Firebase connection and setup listeners after initialization
-            setTimeout(() => {
-                testFirebaseConnection();
-                setupFirebaseListeners();
-            }, 1500);
-            
-            // Initialize sample data if needed (for demo purposes)
-            setTimeout(() => {
-                initializeSampleData();
-            }, 3000);
-            
-            // Auto-refresh data every 30 seconds
-            setInterval(() => {
-                if (db) {
-                    updateParkingStatsFromNumberplate();
-                    updateChartsFromNumberplate();
-                }
-            }, 30000);
-            
-            // Update timestamp display every minute
-            setInterval(() => {
-                const now = new Date();
-                const lastUpdatedEl = document.getElementById('lastUpdated');
-                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed') && !lastUpdatedEl.textContent.includes('connection failed')) {
-                    if (!lastUpdatedEl.textContent.includes('Connected to Firebase')) {
-                        lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                    
+                    // Handle vehicle data structure - each entry represents a parked vehicle
+                    const plateNumber = data.number_plate;
+                    const timestamp = data.entry_time;
+                    
+                    if (!plateNumber || !timestamp) {
+                        console.warn('Missing required data in vehicles - plate:', plateNumber, 'timestamp:', timestamp);
+                        return;
                     }
-                }
-            }, 60000);
-            
-            console.log('Application initialization completed');
+                    
+                    // Parse timestamp properly
+                    let entryTime;
+                    try {
+                        // Handle ESP32 format: "2025-05-23 22:54:54"
+                        if (timestamp.includes(' ') && !timestamp.includes('T')) {
+                            entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
+                        } else {
+                            entryTime = new Date(timestamp);
+                        }
+                        
+                        // Validate the parsed date
+                        if (isNaN(entryTime.getTime())) {
+                            console.error('Invalid timestamp format:', timestamp);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing timestamp:', timestamp, error);
+                        return;
+                    }
+                    
+                    const entryData = {
+                        recordId: recordId,
+                        number_plate: plateNumber,
+                        entry_time: entryTime.toISOString(),
+                        date_time: timestamp,
+                        timestamp: entryTime.toISOString(),
+                        detected_time: entryTime.toISOString(),
+                        image: data.image || null
+                    };
+                    
+                    console.log('Processed vehicle entry data:', entryData);
+                    
+                    // Add to current vehicles (new vehicle entry = vehicle entered)
+                    currentVehicles[recordId] = entryData;
+                    
+                    // Add to recent entries (limit to last 20)
+                    recentEntries.unshift(entryData);
+                    if (recentEntries.length > 20) {
+                        recentEntries = recentEntries.slice(0, 20);
+                    }
+                    
+                    // Update displays
+                    displayCurrentVehicles();
+                    displayRecentEntries();
+                    updateParkingStatsFromFirebase();
+                    
+                    console.log('Vehicle entered:', plateNumber);
+                }, error => {
+                    console.error('Error reading vehicle entries:', error);
+                });
+                
+                // Listen for vehicle data changes
+                db.ref('vehicles').on('child_changed', snapshot => {
+                    console.log('Vehicle data updated:', snapshot.key, snapshot.val());
+                    
+                    const recordId = snapshot.key;
+                    const data = snapshot.val();
+                    const plateNumber = data.number_plate;
+                    
+                    if (!plateNumber) return;
+                    
+                    // Parse timestamp
+                    let entryTime;
+                    try {
+                        const timestamp = data.entry_time;
+                        if (timestamp.includes(' ') && !timestamp.includes('T')) {
+                            entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
+                        } else {
+                            entryTime = new Date(timestamp);
+                        }
+                        
+                        if (isNaN(entryTime.getTime())) {
+                            console.error('Invalid timestamp format in change:', timestamp);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing timestamp in change:', error);
+                        return;
+                    }
+                    
+                    const entryData = {
+                        recordId: recordId,
+                        number_plate: plateNumber,
+                        entry_time: entryTime.toISOString(),
+                        date_time: data.entry_time,
+                        timestamp: entryTime.toISOString(),
+                        detected_time: entryTime.toISOString(),
+                        image: data.image || null
+                    };
+                    
+                    // Update current vehicles if it exists
+                    if (currentVehicles[recordId]) {
+                        currentVehicles[recordId] = entryData;
+                    }
+                    
+                    // Update displays
+                    displayCurrentVehicles();
+                    displayRecentEntries();
+                    updateParkingStatsFromFirebase();
+                    
+                }, error => {
+                    console.error('Error on vehicle data change:', error);
+                });
+                
+                // Listen for vehicle removals (vehicle exits)
+                db.ref('vehicles').on('child_removed', snapshot => {
+                    console.log('Vehicle removed (vehicle exited):', snapshot.key);
+                    const recordId = snapshot.key;
+                    const vehicleData = currentVehicles[recordId];
+                    
+                    if (vehicleData) {
+                        // Add to recent exits
+                        const exitData = {
+                            ...vehicleData,
+                            exit_time: new Date().toISOString()
+                        };
+                        recentExits.unshift(exitData);
+                        if (recentExits.length > 20) {
+                            recentExits = recentExits.slice(0, 20);
+                        }
+                        
+                        // Remove from current vehicles
+                        delete currentVehicles[recordId];
+                        
+                        // Update displays
+                        displayCurrentVehicles();
+                        displayRecentExits();
+                    }
+                    
+                    updateParkingStatsFromFirebase();
+                }, error => {
+                    console.error('Error on vehicle removal:', error);
+                });
+                
+                // Listen for parking_stats updates
+                db.ref('parking_stats').on('value', snapshot => {
+                    console.log('Parking stats updated:', snapshot.val());
+                    updateParkingStatsFromFirebase();
+                }, error => {
+                    console.error('Error reading parking_stats:', error);
+                });
+                
+                // Listen for daily_counts updates
+                db.ref('daily_counts').on('value', snapshot => {
+                    console.log('Daily counts updated:', snapshot.val());
+                    updateDailyChartFromFirebase();
+                }, error => {
+                    console.error('Error reading daily_counts:', error);
+                });
+                
+                // Listen for monthly_counts updates
+                db.ref('monthly_counts').on('value', snapshot => {
+                    console.log('Monthly counts updated:', snapshot.val());
+                    updateMonthlyChartFromFirebase();
+                }, error => {
+                    console.error('Error reading monthly_counts:', error);
+                });
+                
+                console.log('Firebase listeners set up successfully for all data structures');
+                
+                // Load initial data
+                loadInitialDataFromVehicles();
+                
+            } catch (error) {
+                console.error('Error setting up Firebase listeners:', error);
+            }
         }
 
         // Test Firebase connection
@@ -1265,66 +1116,52 @@
                 });
         }
 
-        // Initialize sample data for testing (if no real data exists)
-        function initializeSampleData() {
+        // Initialize Firebase connection and load real-time data only
+        function initializeRealTimeData() {
             if (!db) return;
 
-            console.log('Checking if sample data initialization is needed...');
+            console.log('Loading real-time data from Firebase...');
+            
+            // Load initial data from all Firebase folders
+            loadInitialDataFromVehicles();
+            updateParkingStatsFromFirebase();
+            updateChartsFromFirebase();
+        }
 
-            // Check if real data exists
-            db.ref('numberplate').once('value').then(snapshot => {
-                if (!snapshot.exists() || Object.keys(snapshot.val() || {}).length === 0) {
-                    console.log('No real data found, initializing sample data for demonstration...');
-
-                    // Create sample data matching ESP32 format
-                    const now = new Date();
-                    const sampleNumberplateData = {
-                        'sample-001': {
-                            date_time: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0], // 2 hours ago
-                            number_plate: 'ABC-123'
-                        },
-                        'sample-002': {
-                            date_time: new Date(now.getTime() - 45 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0], // 45 minutes ago  
-                            number_plate: 'XYZ-789'
-                        },
-                        'sample-003': {
-                            date_time: new Date(now.getTime() - 30 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0], // 30 minutes ago
-                            number_plate: 'DEF-456'
-                        },
-                        'sample-004': {
-                            date_time: new Date(now.getTime() - 15 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0], // 15 minutes ago
-                            number_plate: 'GHI-321'
-                        }
-                    };
-
-                    // Set sample data
-                    db.ref('numberplate').set(sampleNumberplateData)
-                        .then(() => {
-                            console.log('Sample data initialized successfully');
-                            console.warn('⚠️  USING SAMPLE DATA - Timestamps are simulated!');
-                            console.warn('⚠️  Real ESP32 data will automatically replace this sample data.');
-                            
-                            // Show notification in UI
-                            const lastUpdatedEl = document.getElementById('lastUpdated');
-                            if (lastUpdatedEl) {
-                                const originalText = lastUpdatedEl.textContent;
-                                lastUpdatedEl.innerHTML = `<span style="color: orange;">⚠️ Using Sample Data</span> - ${originalText}`;
-                                
-                                // Remove warning after 10 seconds
-                                setTimeout(() => {
-                                    lastUpdatedEl.textContent = originalText;
-                                }, 10000);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error initializing sample data:', error);
-                        });
-                } else {
-                    console.log('Real data found, skipping sample data initialization');
+        // Manual refresh function to reload real-time data from Firebase
+        function refreshData() {
+            console.log('Manually refreshing real-time data from Firebase...');
+            
+            if (!db) {
+                console.error('Database not initialized for refresh');
+                alert('Database not connected. Please check your Firebase configuration.');
+                return;
+            }
+            
+            // Show loading state
+            const refreshButton = event.target;
+            const originalText = refreshButton.innerHTML;
+            refreshButton.innerHTML = '🔄 Refreshing...';
+            refreshButton.disabled = true;
+            
+            // Refresh all real-time data from Firebase (ESP32 data)
+            loadInitialDataFromVehicles();
+            updateChartsFromFirebase();
+            updateParkingStatsFromFirebase();
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                refreshButton.innerHTML = originalText;
+                refreshButton.disabled = false;
+                
+                // Update last updated time
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed')) {
+                    lastUpdatedEl.textContent = `Last Updated: ${new Date().toLocaleString()}`;
                 }
-            }).catch(error => {
-                console.error('Error checking for existing data:', error);
-            });
+                
+                console.log('Real-time data refresh completed');
+            }, 2000);
         }
 
         // Add connection status indicator
@@ -1351,6 +1188,87 @@
                     lastUpdatedEl.style.color = '#ff9800';
                     break;
             }
+        }
+
+        // Show tab function for activity tabs
+        function showTab(tab) {
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById('recentEntriesList').style.display = 'none';
+            document.getElementById('recentExitsList').style.display = 'none';
+            
+            if (tab === 'entries') {
+                document.getElementById('recentEntriesList').style.display = 'block';
+                buttons[0].classList.add('active');
+            } else if (tab === 'exits') {
+                document.getElementById('recentExitsList').style.display = 'block';
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Show image modal function
+        function showImageModal(src) {
+            const modal = document.createElement('div');
+            modal.className = 'image-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <img src="${src}" alt="Vehicle Image">
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Initialize the application
+        function init() {
+            console.log('Initializing Smart Parking Management System...');
+            
+            // Initialize Firebase first
+            initializeFirebase();
+            
+            // Initialize charts
+            initCharts();
+            
+            // Setup search functionality after DOM is ready
+            if (searchInputEl) {
+                searchInputEl.addEventListener('input', displayCurrentVehicles);
+                console.log('Search functionality initialized');
+            } else {
+                console.warn('Search input element not found');
+            }
+            
+            // Test Firebase connection and setup listeners after initialization
+            setTimeout(() => {
+                testFirebaseConnection();
+                setupFirebaseListeners();
+            }, 1500);
+            
+            // Load real-time data from ESP32 via Firebase
+            setTimeout(() => {
+                initializeRealTimeData();
+            }, 2000);
+            
+            // Auto-refresh data every 30 seconds
+            setInterval(() => {
+                if (db) {
+                    updateParkingStatsFromFirebase();
+                    updateChartsFromFirebase();
+                }
+            }, 30000);
+            
+            // Update timestamp display every minute
+            setInterval(() => {
+                const now = new Date();
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed') && !lastUpdatedEl.textContent.includes('connection failed')) {
+                    if (!lastUpdatedEl.textContent.includes('Connected to Firebase')) {
+                        lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                    }
+                }
+            }, 60000);
+            
+            console.log('Application initialization completed');
         }
 
         // Start the application when DOM is loaded
