@@ -8,6 +8,7 @@ This is the project to storage information about liecens plate and entry time of
   + Send it to Gemini API to detect the number plate
   + Validates the detected plate
   + Stores valid plates and timestamps in Firebase
+  + Python code run on colab or cloud will read the data in firebase to process parking_status, daily_counts, monthly_counts and send to firebase
 - Debug messages are printed to the Serial Monitor for monitoring
   
 # Set up:
@@ -27,7 +28,7 @@ This is the project to storage information about liecens plate and entry time of
 - Select "Realtime database" and create a database (choose "Start in test mode")
 ### Set up Arduino IDE:
 - Additional board manager URLs (in case you don't have): https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-- install library:
+- Install library:
   +  esp32cam-main.zip in this repository
   +  ArduinoJson
 ### Set up web app:
@@ -47,8 +48,23 @@ const firebaseConfig = {
 ```
 - Replace the firebaseConfig values in Index.html with the actual values from your Firebase Console.
 # Running:
-- open main.ino in Arduino IDE
-- select AI Thinker ESP32-CAM as your board and choose your port
+- Open process_numberplate.ipynb on colab or cloud
+- Fill the firebase config :
+```python
+config = {
+    "apiKey": "___________________________",
+    "authDomain": "___________________________",
+    "databaseURL": "___________________________",
+    "projectId": "___________________________",
+    "storageBucket": "_______________________",
+    "messagingSenderId": "__________",
+    "appId": "_________________________",
+    "measurementId": "________________________"
+}
+```
+- Run all cells
+- Open main.ino in Arduino IDE
+- Select AI Thinker ESP32-CAM as your board and choose your port
 - Fill your WIFI SSID and Password
 - Fill GEMINI_API_KEY with your API Key on https://ai.google.dev
 - Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name) (Eg: firbease-link/data.json)
