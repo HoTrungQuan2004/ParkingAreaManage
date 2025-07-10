@@ -13,27 +13,27 @@ This is the project to storage information about liecens plate and entry time of
   
 # Set up:
 ### Set up driver:
-- Extract CP210x_Windows_Drivers_with_Serial_Enumeration.zip
+- Extract ```CP210x_Windows_Drivers_with_Serial_Enumeration.zip```
 - Run x64 or x86 installer depend on your device.
 ### Set up Gemini API:
 - Access and sign in the Gemini AI Developers (https://ai.google.dev)
-- In Solution, choose Gemini API
-- Choose "Get a Gemini API Key"
-- Choose "Create API Key" and create an API Key (can skip if already have one)
+- In ```Solution```, choose ```Gemini API```
+- Choose ```Get a Gemini API Key```
+- Choose ```Create API Key``` and create an API Key (can skip if already have one)
 ### Set up Firebase:
-- Access Firebase and sign in Firebase (firebase.google.com)
-- Choose "Get started in console"
-- Choose "Create a firebase project" or choose your project if already have
-- Choose "Build" in the task bar at the right
-- Select "Realtime database" and create a database (choose "Start in test mode")
+- Access Firebase and sign in Firebase (https://console.firebase.google.com)
+- Choose ```Get started in console```
+- Choose ```Create a firebase project``` or choose your project if already have
+- Choose ```Build``` in the task bar at the right
+- Select ```Realtime database``` and create a database (choose ```Start in test mode```)
 ### Set up Arduino IDE:
-- Additional board manager URLs (in case you don't have): https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+- Additional board manager URLs (in case you don't have): ```https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json```
 - Install library:
-  +  esp32cam-main.zip in this repository
-  +  ArduinoJson
+  +  ```esp32cam-main.zip``` in this repository
+  +  ```ArduinoJson```
 ### Set up web app:
-- In Firebase consle, enter "project settings" in your project
-- Choose "Web app" -> name it -> Click ** Register App **
+- In Firebase consle, enter ```project settings``` in your project
+- Choose ```Web app``` -> named it -> Click ```Register App```
 - Copy the Firebase configuration code as follows:
 ``` js
 const firebaseConfig = {
@@ -48,7 +48,7 @@ const firebaseConfig = {
 ```
 - Replace the firebaseConfig values in Index.html with the actual values from your Firebase Console.
 # Running:
-- Open process_numberplate.ipynb on colab or cloud
+- Open ```process_numberplate.ipynb``` on colab or cloud
 - Fill the firebase config :
 ```python
 config = {
@@ -63,14 +63,13 @@ config = {
 }
 ```
 - Run all cells
-- Open main.ino in Arduino IDE
-- Select AI Thinker ESP32-CAM as your board and choose your port
-- Fill your WIFI SSID and Password
-- Fill GEMINI_API_KEY with your API Key on https://ai.google.dev
-- Fill FIREBASE_URL with your URL on Firebase realtime database, and then add data.json at the end of this URL (you can replace data in data.json with another name) (Eg: firbease-link/data.json)
+- Open ```main.ino``` in Arduino IDE
+- Select ```AI Thinker ESP32-CAM``` as your board and choose your port
+- Fill your ```WIFI SSID``` and ```Password```
+- Fill ```GEMINI_API_KEY``` with your API Key on https://ai.google.dev
+- Fill ```FIREBASE_URL``` with your URL on Firebase realtime database, and then add numberplate.json at the end of this URL (you can replace numberplate in numberplate.json with another name. Ensure to set the same name for NUMBERPLATE_NODE in ```Process_numberplate.ipynb```) (Eg: firbease-link/numberplate.json)
 - Modify and Upload code to your ESP32-CAM
 - Press RST button on the ESP32-CAM
-- Open web app directly by double-click Index.html or by using Live Server extension in VSCode
 
 # Notes:
 - Connection errors may occur if the network is weak
