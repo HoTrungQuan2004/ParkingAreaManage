@@ -110,14 +110,14 @@
         // Replace with your actual Firebase project configuration
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-            apiKey: "YourapiKey",
-            authDomain: "yourauthDomain.firebaseapp.com",
+            apiKey: "YourAPI KeY",
+            authDomain: "Your authDomain",
             databaseURL: "your databaseURL",
-            projectId: "Your projectId",
-            storageBucket: "yourstrorageBucket.firebasestorage.app",
-            messagingSenderId: "YourSenderId",
-            appId: "YourappId",
-            measurementId: "Your measurementId"
+            projectId: "Your ProjectID",
+            storageBucket: "Your storageBucket",
+            messagingSenderId: "YourmessingSenderId",
+            appId: "Your appID",
+            measurementId: "Your measurementID"
         };
 
         // Global variables
@@ -367,7 +367,7 @@
             currentVehiclesListEl.innerHTML = '';
             
             if (filteredVehicles.length === 0) {
-                const emptyMessage = searchTerm ? 'No vehicles found matching your search' : 'No vehicles currently parked (waiting for ESP32 data...)';
+                const emptyMessage = searchTerm ? 'No vehicles found matching your search' : 'No vehicles currently parked';
                 currentVehiclesListEl.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
                 return;
             }
@@ -378,21 +378,17 @@
                 const vehicleEl = document.createElement('div');
                 vehicleEl.className = 'plate current-vehicle';
                 
-                // Handle different timestamp formats
+                // Handle entry_time from vehicles node (format: "2025-07-10 14:30:45")
                 let entryTime;
                 try {
                     if (data.entry_time) {
-                        entryTime = new Date(data.entry_time);
-                    } else if (data.date_time) {
-                        // Handle ESP32 format "2025-05-23 22:54:54"
-                        entryTime = new Date(data.date_time.replace(' ', 'T') + 'Z');
-                        if (isNaN(entryTime.getTime())) {
-                            entryTime = new Date(data.date_time);
+                        if (data.entry_time.includes(' ') && !data.entry_time.includes('T')) {
+                            entryTime = new Date(data.entry_time.replace(' ', 'T'));
+                        } else {
+                            entryTime = new Date(data.entry_time);
                         }
-                    } else if (data.timestamp) {
-                        entryTime = new Date(data.timestamp);
-                    } else if (data.detected_time) {
-                        entryTime = new Date(data.detected_time);
+                    } else {
+                        throw new Error('No entry_time found');
                     }
                     
                     // Validate the parsed date
@@ -400,12 +396,7 @@
                         throw new Error('Invalid date');
                     }
                 } catch (error) {
-                    console.error('Error parsing entry time for vehicle', key, error, {
-                        entry_time: data.entry_time,
-                        date_time: data.date_time,
-                        timestamp: data.timestamp,
-                        detected_time: data.detected_time
-                    });
+                    console.error('Error parsing entry_time for vehicle', key, error, data);
                     // Skip this vehicle if no valid timestamp
                     return;
                 }
@@ -456,54 +447,45 @@
             recentEntriesListEl.innerHTML = '';
             
             if (recentEntries.length === 0) {
-                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent entries (waiting for ESP32 data...)</div>';
+                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent entries found</div>';
                 return;
             }
 
-            // Sort entries by time (newest first)
+            // Sort entries by time (newest first) - data comes from history with date_time
             const sortedEntries = [...recentEntries].sort((a, b) => {
-                const timeA = new Date(a.entry_time || a.timestamp || a.detected_time || 0);
-                const timeB = new Date(b.entry_time || b.timestamp || b.detected_time || 0);
+                const timeA = new Date(a.date_time || 0);
+                const timeB = new Date(b.date_time || 0);
                 return timeB - timeA;
             });
 
             sortedEntries.slice(0, 20).forEach(data => {
-                if (data && (data.number_plate || data.key)) {
+                if (data && data.number_plate) {
                     const entryEl = document.createElement('div');
                     entryEl.className = 'plate activity-entry';
                     
-                    const plateNumber = data.number_plate || data.key || 'Unknown';
+                    const plateNumber = data.number_plate;
                     
-                    // Handle different timestamp formats
+                    // Handle date_time from history (format: "2025-07-10 14:30:45")
                     let entryTime;
                     try {
-                        if (data.entry_time) {
-                            entryTime = new Date(data.entry_time);
-                        } else if (data.date_time) {
-                            // Handle ESP32 format "2025-05-23 22:54:54"
-                            entryTime = new Date(data.date_time.replace(' ', 'T') + 'Z');
-                            if (isNaN(entryTime.getTime())) {
-                                entryTime = new Date(data.date_time);
-                            }
-                        } else if (data.timestamp) {
-                            entryTime = new Date(data.timestamp);
-                        } else if (data.detected_time) {
-                            entryTime = new Date(data.detected_time);
+                        if (data.date_time.includes(' ') && !data.date_time.includes('T')) {
+                            entryTime = new Date(data.date_time.replace(' ', 'T'));
+                        } else {
+                            entryTime = new Date(data.date_time);
                         }
                         
-                        // Validate the parsed date
                         if (!entryTime || isNaN(entryTime.getTime())) {
                             throw new Error('Invalid date');
                         }
                     } catch (error) {
-                        console.error('Error parsing entry time for recent entry:', error, data);
+                        console.error('Error parsing date_time for recent entry:', error, data);
                         return; // Skip this entry if no valid timestamp
                     }
                     
                     entryEl.innerHTML = `
                         <div class="activity-info">
-                            <div class="plate-number"> ${plateNumber}</div>
-                            <div class="activity-time"> ${entryTime.toLocaleString()}</div>
+                            <div class="plate-number">🟢 ${plateNumber}</div>
+                            <div class="activity-time">📅 ${entryTime.toLocaleString('en-GB')}</div>
                             <div class="activity-status">Status: Vehicle Entered</div>
                         </div>
                     `;
@@ -522,7 +504,7 @@
             recentExitsListEl.innerHTML = '';
             
             if (recentExits.length === 0) {
-                recentExitsListEl.innerHTML = '<div class="empty-state">No recent exits (waiting for ESP32 data...)</div>';
+                recentExitsListEl.innerHTML = '<div class="empty-state">No recent exits found</div>';
                 return;
             }
 
@@ -782,22 +764,32 @@
             });
         }
 
-        // Load initial data from Firebase vehicles structure (ESP32 data)
-        function loadInitialDataFromVehicles() {
+        // Load initial data from Firebase structure (vehicles, history)
+        function loadInitialDataFromFirebase() {
             if (!db) return;
             
-            console.log('Loading real-time vehicle data from ESP32 via Firebase...');
+            console.log('Loading data from Firebase...');
             
+            // Load current vehicles (vehicles node)
+            loadCurrentVehicles();
+            
+            // Load recent entries from history (all entries for counting)
+            loadRecentEntries();
+            
+            // Initialize recent exits (simulated from vehicle removals)
+            recentExits = [];
+            displayRecentExits();
+        }
+        
+        // Load current vehicles from vehicles node
+        function loadCurrentVehicles() {
             db.ref('vehicles').once('value').then(snapshot => {
                 const vehiclesData = snapshot.val();
-                console.log('Initial vehicles data loaded:', vehiclesData);
+                console.log('Current vehicles data loaded:', vehiclesData);
+                
+                currentVehicles = {};
                 
                 if (vehiclesData) {
-                    // Clear existing data
-                    currentVehicles = {};
-                    recentEntries = [];
-                    
-                    // Process each vehicle entry
                     Object.entries(vehiclesData).forEach(([recordId, vehicleData]) => {
                         const plateNumber = vehicleData.number_plate;
                         const timestamp = vehicleData.entry_time;
@@ -807,12 +799,11 @@
                             return;
                         }
                         
-                        // Parse timestamp
+                        // Parse timestamp from format "2025-07-10 14:30:45"
                         let entryTime;
                         try {
-                            // Handle "2025-05-23 22:54:54" format or ISO format
                             if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                                entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
+                                entryTime = new Date(timestamp.replace(' ', 'T'));
                             } else {
                                 entryTime = new Date(timestamp);
                             }
@@ -828,46 +819,75 @@
                         const entryData = {
                             recordId: recordId,
                             number_plate: plateNumber,
-                            entry_time: entryTime.toISOString(),
-                            date_time: timestamp,
-                            timestamp: entryTime.toISOString(),
-                            detected_time: entryTime.toISOString(),
+                            entry_time: timestamp,
+                            plate_norm: vehicleData.plate_norm || plateNumber,
                             image: vehicleData.image || null
                         };
                         
-                        // Add to current vehicles (all vehicle entries are currently parked)
+                        // Add to current vehicles
                         currentVehicles[recordId] = entryData;
+                    });
+                }
+                
+                displayCurrentVehicles();
+                updateParkingStatsFromFirebase();
+                console.log('Current vehicles loaded:', Object.keys(currentVehicles).length);
+            }).catch(error => {
+                console.error('Error loading current vehicles:', error);
+            });
+        }
+        
+        // Load recent entries from history node (all entries for counting)
+        function loadRecentEntries() {
+            db.ref('history').orderByChild('date_time').limitToLast(20).once('value').then(snapshot => {
+                const historyData = snapshot.val();
+                console.log('Recent entries data loaded from history:', historyData);
+                
+                recentEntries = [];
+                
+                if (historyData) {
+                    Object.entries(historyData).forEach(([recordId, vehicleData]) => {
+                        const plateNumber = vehicleData.number_plate;
+                        const timestamp = vehicleData.date_time;
                         
-                        // Add to recent entries
+                        if (!plateNumber || !timestamp) return;
+                        
+                        let entryTime;
+                        try {
+                            if (timestamp.includes(' ') && !timestamp.includes('T')) {
+                                entryTime = new Date(timestamp.replace(' ', 'T'));
+                            } else {
+                                entryTime = new Date(timestamp);
+                            }
+                            
+                            if (isNaN(entryTime.getTime())) return;
+                        } catch (error) {
+                            console.error('Error parsing date_time for history entry:', error);
+                            return;
+                        }
+                        
+                        const entryData = {
+                            recordId: recordId,
+                            number_plate: plateNumber,
+                            date_time: timestamp,
+                            entry_time: timestamp
+                        };
+                        
                         recentEntries.push(entryData);
                     });
                     
-                    // Sort recent entries by time (newest first)
-                    recentEntries.sort((a, b) => new Date(b.entry_time) - new Date(a.entry_time));
-                    
-                    // Update all displays
-                    displayCurrentVehicles();
-                    displayRecentEntries();
-                    updateParkingStatsFromFirebase();
-                    updateChartsFromFirebase();
-                    
-                    console.log('Initial vehicles data loaded successfully. Current vehicles:', Object.keys(currentVehicles).length);
-                } else {
-                    console.log('No vehicle data found in Firebase - waiting for ESP32 to send data');
-                    // Initialize empty displays with waiting message
-                    displayCurrentVehicles();
-                    displayRecentEntries();
-                    updateParkingStatsFromFirebase();
-                    updateChartsFromFirebase();
+                    // Sort by time (newest first)
+                    recentEntries.sort((a, b) => new Date(b.date_time) - new Date(a.date_time));
                 }
+                
+                displayRecentEntries();
+                console.log('Recent entries loaded from history:', recentEntries.length);
             }).catch(error => {
-                console.error('Error loading initial vehicles data:', error);
+                console.error('Error loading recent entries from history:', error);
             });
         }
 
-        // Legacy functions removed - now using vehicles, daily_counts, monthly_counts, and parking_stats structure
-
-        // Setup Firebase listeners for real-time updates from ESP32
+        // Setup Firebase listeners for real-time updates
         function setupFirebaseListeners() {
             if (!db) {
                 console.error('Database not initialized for listeners');
@@ -884,31 +904,25 @@
                     const recordId = snapshot.key;
                     const data = snapshot.val();
                     
-                    console.log('Raw vehicle data:', {
-                        recordId: recordId,
-                        data: data
-                    });
-                    
-                    // Handle vehicle data structure - each entry represents a parked vehicle
+                    // Handle vehicle data structure from processnumberplate.ipynb
                     const plateNumber = data.number_plate;
                     const timestamp = data.entry_time;
+                    const plateNorm = data.plate_norm;
                     
                     if (!plateNumber || !timestamp) {
                         console.warn('Missing required data in vehicles - plate:', plateNumber, 'timestamp:', timestamp);
                         return;
                     }
                     
-                    // Parse timestamp properly
+                    // Parse timestamp properly (format: "2025-07-10 14:30:45")
                     let entryTime;
                     try {
-                        // Handle ESP32 format: "2025-05-23 22:54:54"
                         if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                            entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
+                            entryTime = new Date(timestamp.replace(' ', 'T'));
                         } else {
                             entryTime = new Date(timestamp);
                         }
                         
-                        // Validate the parsed date
                         if (isNaN(entryTime.getTime())) {
                             console.error('Invalid timestamp format:', timestamp);
                             return;
@@ -921,30 +935,27 @@
                     const entryData = {
                         recordId: recordId,
                         number_plate: plateNumber,
-                        entry_time: entryTime.toISOString(),
-                        date_time: timestamp,
-                        timestamp: entryTime.toISOString(),
-                        detected_time: entryTime.toISOString(),
+                        entry_time: timestamp,
+                        plate_norm: plateNorm,
                         image: data.image || null
                     };
                     
                     console.log('Processed vehicle entry data:', entryData);
                     
-                    // Add to current vehicles (new vehicle entry = vehicle entered)
-                    currentVehicles[recordId] = entryData;
-                    
-                    // Add to recent entries (limit to last 20)
-                    recentEntries.unshift(entryData);
-                    if (recentEntries.length > 20) {
-                        recentEntries = recentEntries.slice(0, 20);
+                    // Check if this vehicle is already in our current list (avoid duplicates)
+                    if (currentVehicles[recordId]) {
+                        console.log('Vehicle', plateNumber, 'already in current vehicles, skipping duplicate');
+                        return;
                     }
+                    
+                    // Add to current vehicles
+                    currentVehicles[recordId] = entryData;
                     
                     // Update displays
                     displayCurrentVehicles();
-                    displayRecentEntries();
                     updateParkingStatsFromFirebase();
                     
-                    console.log('Vehicle entered:', plateNumber);
+                    console.log('Vehicle entered:', plateNumber, 'at', timestamp);
                 }, error => {
                     console.error('Error reading vehicle entries:', error);
                 });
@@ -956,47 +967,24 @@
                     const recordId = snapshot.key;
                     const data = snapshot.val();
                     const plateNumber = data.number_plate;
+                    const timestamp = data.entry_time;
                     
-                    if (!plateNumber) return;
-                    
-                    // Parse timestamp
-                    let entryTime;
-                    try {
-                        const timestamp = data.entry_time;
-                        if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                            entryTime = new Date(timestamp.replace(' ', 'T') + 'Z');
-                        } else {
-                            entryTime = new Date(timestamp);
-                        }
-                        
-                        if (isNaN(entryTime.getTime())) {
-                            console.error('Invalid timestamp format in change:', timestamp);
-                            return;
-                        }
-                    } catch (error) {
-                        console.error('Error parsing timestamp in change:', error);
-                        return;
-                    }
+                    if (!plateNumber || !timestamp) return;
                     
                     const entryData = {
                         recordId: recordId,
                         number_plate: plateNumber,
-                        entry_time: entryTime.toISOString(),
-                        date_time: data.entry_time,
-                        timestamp: entryTime.toISOString(),
-                        detected_time: entryTime.toISOString(),
+                        entry_time: timestamp,
+                        plate_norm: data.plate_norm,
                         image: data.image || null
                     };
                     
                     // Update current vehicles if it exists
                     if (currentVehicles[recordId]) {
                         currentVehicles[recordId] = entryData;
+                        displayCurrentVehicles();
+                        updateParkingStatsFromFirebase();
                     }
-                    
-                    // Update displays
-                    displayCurrentVehicles();
-                    displayRecentEntries();
-                    updateParkingStatsFromFirebase();
                     
                 }, error => {
                     console.error('Error on vehicle data change:', error);
@@ -1004,16 +992,26 @@
                 
                 // Listen for vehicle removals (vehicle exits)
                 db.ref('vehicles').on('child_removed', snapshot => {
-                    console.log('Vehicle removed (vehicle exited):', snapshot.key);
+                    console.log('Vehicle removed from vehicles (vehicle exited):', snapshot.key);
                     const recordId = snapshot.key;
                     const vehicleData = currentVehicles[recordId];
                     
                     if (vehicleData) {
-                        // Add to recent exits
+                        // Create simulated exit data for display
+                        const now = new Date();
+                        const exitTimeString = now.getFullYear() + '-' + 
+                                              String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                                              String(now.getDate()).padStart(2, '0') + ' ' + 
+                                              String(now.getHours()).padStart(2, '0') + ':' + 
+                                              String(now.getMinutes()).padStart(2, '0') + ':' + 
+                                              String(now.getSeconds()).padStart(2, '0');
+                        
                         const exitData = {
                             ...vehicleData,
-                            exit_time: new Date().toISOString()
+                            exit_time: exitTimeString
                         };
+                        
+                        // Add to recent exits for display
                         recentExits.unshift(exitData);
                         if (recentExits.length > 20) {
                             recentExits = recentExits.slice(0, 20);
@@ -1025,6 +1023,8 @@
                         // Update displays
                         displayCurrentVehicles();
                         displayRecentExits();
+                        
+                        console.log('Vehicle exited:', vehicleData.number_plate, 'at', exitTimeString);
                     }
                     
                     updateParkingStatsFromFirebase();
@@ -1056,10 +1056,43 @@
                     console.error('Error reading monthly_counts:', error);
                 });
                 
+                // Listen for new entries in history
+                db.ref('history').on('child_added', snapshot => {
+                    console.log('New entry in history:', snapshot.key, snapshot.val());
+                    
+                    const recordId = snapshot.key;
+                    const data = snapshot.val();
+                    
+                    const plateNumber = data.number_plate;
+                    const timestamp = data.date_time;
+                    
+                    if (!plateNumber || !timestamp) return;
+                    
+                    const entryData = {
+                        recordId: recordId,
+                        number_plate: plateNumber,
+                        date_time: timestamp,
+                        entry_time: timestamp
+                    };
+                    
+                    // Add to recent entries (limit to last 20)
+                    recentEntries.unshift(entryData);
+                    if (recentEntries.length > 20) {
+                        recentEntries = recentEntries.slice(0, 20);
+                    }
+                    
+                    // Update display
+                    displayRecentEntries();
+                    
+                    console.log('New entry added to recent entries:', plateNumber, 'at', timestamp);
+                }, error => {
+                    console.error('Error reading history entries:', error);
+                });
+                
                 console.log('Firebase listeners set up successfully for all data structures');
                 
                 // Load initial data
-                loadInitialDataFromVehicles();
+                loadInitialDataFromFirebase();
                 
             } catch (error) {
                 console.error('Error setting up Firebase listeners:', error);
