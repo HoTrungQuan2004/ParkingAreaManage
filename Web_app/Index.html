@@ -110,12 +110,12 @@
         // Replace with your actual Firebase project configuration
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-            apiKey: "YourAPI KeY",
-            authDomain: "Your authDomain",
-            databaseURL: "your databaseURL",
-            projectId: "Your ProjectID",
-            storageBucket: "Your storageBucket",
-            messagingSenderId: "YourmessingSenderId",
+            apiKey: "YourAPI key",
+            authDomain: "authDomain",
+            databaseURL: "Your databaseURL",
+            projectId: "YourprojectID",
+            storageBucket: "YourstoraheBucket",
+            messagingSenderId: "messageSenderID",
             appId: "Your appID",
             measurementId: "Your measurementID"
         };
@@ -150,7 +150,8 @@
                         const lastUpdatedEl = document.querySelector('#lastUpdated');
                         if (lastUpdatedEl) {
                             const statusText = lastUpdatedEl.textContent.replace(/^.*?Last Updated:/, 'Last Updated:');
-                            lastUpdatedEl.innerHTML = `<span class="connection-status connected"></span>${statusText || 'Connected - ' + new Date().toLocaleString()}`;
+                            const vietnamTime = getCurrentVietnamTime();
+                            lastUpdatedEl.innerHTML = `<span class="connection-status connected"></span>${statusText || 'Connected - ' + formatDateTime(vietnamTime)}`;
                         }
                     } else {
                         console.log('Disconnected from Firebase Realtime Database');
@@ -311,16 +312,37 @@
             }
         }
 
-        // Format date and time
+        // Format date and time with Vietnam timezone (GMT+7)
         function formatDateTime(dateTimeString) {
             const date = new Date(dateTimeString);
-            return date.toLocaleString();
+            return date.toLocaleString('en-GB', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
         }
 
-        // Format date only
+        // Format date only with Vietnam timezone (GMT+7)
         function formatDate(dateString) {
             const date = new Date(dateString);
-            return date.toLocaleDateString();
+            return date.toLocaleDateString('en-GB', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        // Get current Vietnam time
+        function getCurrentVietnamTime() {
+            return new Date().toLocaleString('sv-SE', {
+                timeZone: 'Asia/Ho_Chi_Minh'
+            }).replace('T', ' ');
         }
 
         // Add current vehicle to list
@@ -329,20 +351,11 @@
             displayCurrentVehicles();
         }
 
-        // Remove current vehicle from list
+        // Remove current vehicle from list (simplified - exits handled by history)
         function removeCurrentVehicle(key) {
             if (currentVehicles[key]) {
-                // Add to recent exits
-                const exitData = {
-                    ...currentVehicles[key],
-                    exit_time: new Date().toISOString().replace('T', ' ').substr(0, 19)
-                };
-                recentExits.unshift(exitData);
-                if (recentExits.length > 50) recentExits.pop();
-                
                 delete currentVehicles[key];
                 displayCurrentVehicles();
-                displayRecentExits();
             }
         }
 
@@ -383,9 +396,9 @@
                 try {
                     if (data.entry_time) {
                         if (data.entry_time.includes(' ') && !data.entry_time.includes('T')) {
-                            entryTime = new Date(data.entry_time.replace(' ', 'T'));
+                            entryTime = new Date(data.entry_time.replace(' ', 'T') + '+07:00');
                         } else {
-                            entryTime = new Date(data.entry_time);
+                            entryTime = new Date(data.entry_time + '+07:00');
                         }
                     } else {
                         throw new Error('No entry_time found');
@@ -401,8 +414,10 @@
                     return;
                 }
                 
+                // Calculate duration with Vietnam timezone
                 const now = new Date();
-                const duration = Math.max(0, Math.floor((now - entryTime) / (1000 * 60))); // minutes
+                const vietnamNow = new Date(now.toLocaleString('en-US', {timeZone: 'Asia/Ho_Chi_Minh'}));
+                const duration = Math.max(0, Math.floor((vietnamNow - entryTime) / (1000 * 60))); // minutes
                 
                 let durationText = '';
                 if (duration < 1) {
@@ -420,13 +435,13 @@
                 }
                 
                 const plateNumber = data.number_plate || key;
-                const formattedEntryTime = entryTime.toLocaleString();
+                const formattedEntryTime = formatDateTime(data.entry_time);
                 
                 vehicleEl.innerHTML = `
                     <div class="vehicle-info">
-                        <div class="plate-number"> ${plateNumber}</div>
+                        <div class="plate-number">🚗 ${plateNumber}</div>
                         <div class="vehicle-details">
-                            <span class="entry-time"> Entered: ${formattedEntryTime}</span>
+                            <span class="entry-time">📅 Entered: ${formattedEntryTime}</span>
                             <span class="duration">⏱Duration: ${durationText}</span>
                         </div>
                     </div>
@@ -437,7 +452,7 @@
             });
         }
 
-        // Display recent entries
+        // Display recent entries (only direction: "in" from history)
         function displayRecentEntries() {
             if (!recentEntriesListEl) {
                 console.log('recentEntriesListEl not ready');
@@ -451,14 +466,20 @@
                 return;
             }
 
-            // Sort entries by time (newest first) - data comes from history with date_time
-            const sortedEntries = [...recentEntries].sort((a, b) => {
-                const timeA = new Date(a.date_time || 0);
-                const timeB = new Date(b.date_time || 0);
-                return timeB - timeA;
-            });
+            // Filter only "in" direction entries and sort by time (newest first)
+            const entryData = recentEntries.filter(data => data.direction === "in")
+                .sort((a, b) => {
+                    const timeA = new Date(a.date_time || 0);
+                    const timeB = new Date(b.date_time || 0);
+                    return timeB - timeA;
+                });
 
-            sortedEntries.slice(0, 20).forEach(data => {
+            if (entryData.length === 0) {
+                recentEntriesListEl.innerHTML = '<div class="empty-state">No recent vehicle entries found</div>';
+                return;
+            }
+
+            entryData.slice(0, 20).forEach(data => {
                 if (data && data.number_plate) {
                     const entryEl = document.createElement('div');
                     entryEl.className = 'plate activity-entry';
@@ -469,9 +490,9 @@
                     let entryTime;
                     try {
                         if (data.date_time.includes(' ') && !data.date_time.includes('T')) {
-                            entryTime = new Date(data.date_time.replace(' ', 'T'));
+                            entryTime = new Date(data.date_time.replace(' ', 'T') + '+07:00');
                         } else {
-                            entryTime = new Date(data.date_time);
+                            entryTime = new Date(data.date_time + '+07:00');
                         }
                         
                         if (!entryTime || isNaN(entryTime.getTime())) {
@@ -485,7 +506,7 @@
                     entryEl.innerHTML = `
                         <div class="activity-info">
                             <div class="plate-number">🟢 ${plateNumber}</div>
-                            <div class="activity-time">📅 ${entryTime.toLocaleString('en-GB')}</div>
+                            <div class="activity-time">📅 ${formatDateTime(data.date_time)}</div>
                             <div class="activity-status">Status: Vehicle Entered</div>
                         </div>
                     `;
@@ -494,7 +515,7 @@
             });
         }
 
-        // Display recent exits
+        // Display recent exits (only direction: "out" from history)
         function displayRecentExits() {
             if (!recentExitsListEl) {
                 console.log('recentExitsListEl not ready');
@@ -508,14 +529,27 @@
                 return;
             }
 
-            recentExits.slice(0, 20).forEach(data => {
-                if (data && data.number_plate && data.exit_time) {
+            // Filter only "out" direction entries and sort by time (newest first)
+            const exitData = recentExits.filter(data => data.direction === "out")
+                .sort((a, b) => {
+                    const timeA = new Date(a.date_time || 0);
+                    const timeB = new Date(b.date_time || 0);
+                    return timeB - timeA;
+                });
+
+            if (exitData.length === 0) {
+                recentExitsListEl.innerHTML = '<div class="empty-state">No recent vehicle exits found</div>';
+                return;
+            }
+
+            exitData.slice(0, 20).forEach(data => {
+                if (data && data.number_plate && data.date_time) {
                     const exitEl = document.createElement('div');
                     exitEl.className = 'plate activity-exit';
                     exitEl.innerHTML = `
                         <div class="activity-info">
-                            <div class="plate-number"> ${data.number_plate}</div>
-                            <div class="activity-time"> ${formatDateTime(data.exit_time)}</div>
+                            <div class="plate-number">🔴 ${data.number_plate}</div>
+                            <div class="activity-time">📅 ${formatDateTime(data.date_time)}</div>
                             <div class="activity-status">Status: Vehicle Exited</div>
                         </div>
                     `;
@@ -773,12 +807,8 @@
             // Load current vehicles (vehicles node)
             loadCurrentVehicles();
             
-            // Load recent entries from history (all entries for counting)
-            loadRecentEntries();
-            
-            // Initialize recent exits (simulated from vehicle removals)
-            recentExits = [];
-            displayRecentExits();
+            // Load recent activity from history (separate entries and exits)
+            loadRecentActivity();
         }
         
         // Load current vehicles from vehicles node
@@ -803,9 +833,9 @@
                         let entryTime;
                         try {
                             if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                                entryTime = new Date(timestamp.replace(' ', 'T'));
+                                entryTime = new Date(timestamp.replace(' ', 'T') + '+07:00');
                             } else {
-                                entryTime = new Date(timestamp);
+                                entryTime = new Date(timestamp + '+07:00');
                             }
                             
                             if (isNaN(entryTime.getTime())) {
@@ -837,27 +867,29 @@
             });
         }
         
-        // Load recent entries from history node (all entries for counting)
-        function loadRecentEntries() {
-            db.ref('history').orderByChild('date_time').limitToLast(20).once('value').then(snapshot => {
+        // Load recent activity from history node (separate entries and exits based on direction)
+        function loadRecentActivity() {
+            db.ref('history').orderByChild('date_time').limitToLast(50).once('value').then(snapshot => {
                 const historyData = snapshot.val();
-                console.log('Recent entries data loaded from history:', historyData);
+                console.log('Recent activity data loaded from history:', historyData);
                 
                 recentEntries = [];
+                recentExits = [];
                 
                 if (historyData) {
                     Object.entries(historyData).forEach(([recordId, vehicleData]) => {
                         const plateNumber = vehicleData.number_plate;
                         const timestamp = vehicleData.date_time;
+                        const direction = vehicleData.direction;
                         
-                        if (!plateNumber || !timestamp) return;
+                        if (!plateNumber || !timestamp || !direction) return;
                         
                         let entryTime;
                         try {
                             if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                                entryTime = new Date(timestamp.replace(' ', 'T'));
+                                entryTime = new Date(timestamp.replace(' ', 'T') + '+07:00');
                             } else {
-                                entryTime = new Date(timestamp);
+                                entryTime = new Date(timestamp + '+07:00');
                             }
                             
                             if (isNaN(entryTime.getTime())) return;
@@ -866,24 +898,34 @@
                             return;
                         }
                         
-                        const entryData = {
+                        const activityData = {
                             recordId: recordId,
                             number_plate: plateNumber,
                             date_time: timestamp,
-                            entry_time: timestamp
+                            direction: direction
                         };
                         
-                        recentEntries.push(entryData);
+                        // Separate entries and exits based on direction
+                        if (direction === "in") {
+                            recentEntries.push(activityData);
+                        } else if (direction === "out") {
+                            recentExits.push(activityData);
+                        }
                     });
                     
-                    // Sort by time (newest first)
+                    // Sort both arrays by time (newest first)
                     recentEntries.sort((a, b) => new Date(b.date_time) - new Date(a.date_time));
+                    recentExits.sort((a, b) => new Date(b.date_time) - new Date(a.date_time));
                 }
                 
                 displayRecentEntries();
-                console.log('Recent entries loaded from history:', recentEntries.length);
+                displayRecentExits();
+                console.log('Recent activity loaded from history:', {
+                    entries: recentEntries.length,
+                    exits: recentExits.length
+                });
             }).catch(error => {
-                console.error('Error loading recent entries from history:', error);
+                console.error('Error loading recent activity from history:', error);
             });
         }
 
@@ -918,9 +960,9 @@
                     let entryTime;
                     try {
                         if (timestamp.includes(' ') && !timestamp.includes('T')) {
-                            entryTime = new Date(timestamp.replace(' ', 'T'));
+                            entryTime = new Date(timestamp.replace(' ', 'T') + '+07:00');
                         } else {
-                            entryTime = new Date(timestamp);
+                            entryTime = new Date(timestamp + '+07:00');
                         }
                         
                         if (isNaN(entryTime.getTime())) {
@@ -997,34 +1039,13 @@
                     const vehicleData = currentVehicles[recordId];
                     
                     if (vehicleData) {
-                        // Create simulated exit data for display
-                        const now = new Date();
-                        const exitTimeString = now.getFullYear() + '-' + 
-                                              String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                                              String(now.getDate()).padStart(2, '0') + ' ' + 
-                                              String(now.getHours()).padStart(2, '0') + ':' + 
-                                              String(now.getMinutes()).padStart(2, '0') + ':' + 
-                                              String(now.getSeconds()).padStart(2, '0');
-                        
-                        const exitData = {
-                            ...vehicleData,
-                            exit_time: exitTimeString
-                        };
-                        
-                        // Add to recent exits for display
-                        recentExits.unshift(exitData);
-                        if (recentExits.length > 20) {
-                            recentExits = recentExits.slice(0, 20);
-                        }
-                        
-                        // Remove from current vehicles
+                        // Remove from current vehicles (exit data will come from history listener)
                         delete currentVehicles[recordId];
                         
                         // Update displays
                         displayCurrentVehicles();
-                        displayRecentExits();
                         
-                        console.log('Vehicle exited:', vehicleData.number_plate, 'at', exitTimeString);
+                        console.log('Vehicle removed from current vehicles:', vehicleData.number_plate);
                     }
                     
                     updateParkingStatsFromFirebase();
@@ -1065,26 +1086,35 @@
                     
                     const plateNumber = data.number_plate;
                     const timestamp = data.date_time;
+                    const direction = data.direction;
                     
-                    if (!plateNumber || !timestamp) return;
+                    if (!plateNumber || !timestamp || !direction) return;
                     
-                    const entryData = {
+                    const activityData = {
                         recordId: recordId,
                         number_plate: plateNumber,
                         date_time: timestamp,
-                        entry_time: timestamp
+                        direction: direction
                     };
                     
-                    // Add to recent entries (limit to last 20)
-                    recentEntries.unshift(entryData);
-                    if (recentEntries.length > 20) {
-                        recentEntries = recentEntries.slice(0, 20);
+                    // Add to appropriate array based on direction
+                    if (direction === "in") {
+                        // Add to recent entries (limit to last 20)
+                        recentEntries.unshift(activityData);
+                        if (recentEntries.length > 20) {
+                            recentEntries = recentEntries.slice(0, 20);
+                        }
+                        displayRecentEntries();
+                        console.log('New vehicle entry added to recent entries:', plateNumber, 'at', timestamp);
+                    } else if (direction === "out") {
+                        // Add to recent exits (limit to last 20)
+                        recentExits.unshift(activityData);
+                        if (recentExits.length > 20) {
+                            recentExits = recentExits.slice(0, 20);
+                        }
+                        displayRecentExits();
+                        console.log('New vehicle exit added to recent exits:', plateNumber, 'at', timestamp);
                     }
-                    
-                    // Update display
-                    displayRecentEntries();
-                    
-                    console.log('New entry added to recent entries:', plateNumber, 'at', timestamp);
                 }, error => {
                     console.error('Error reading history entries:', error);
                 });
@@ -1123,7 +1153,8 @@
                     // Update UI to show connection is working
                     const lastUpdatedEl = document.getElementById('lastUpdated');
                     if (lastUpdatedEl) {
-                        lastUpdatedEl.textContent = 'Connected to Firebase - ' + new Date().toLocaleString();
+                        const vietnamTime = getCurrentVietnamTime();
+                        lastUpdatedEl.textContent = 'Connected to Firebase - ' + formatDateTime(vietnamTime);
                         lastUpdatedEl.style.color = '#4caf50';
                     }
                 })
@@ -1156,7 +1187,8 @@
             console.log('Loading real-time data from Firebase...');
             
             // Load initial data from all Firebase folders
-            loadInitialDataFromVehicles();
+            loadCurrentVehicles();
+            loadRecentActivity();
             updateParkingStatsFromFirebase();
             updateChartsFromFirebase();
         }
@@ -1178,7 +1210,8 @@
             refreshButton.disabled = true;
             
             // Refresh all real-time data from Firebase (ESP32 data)
-            loadInitialDataFromVehicles();
+            loadCurrentVehicles();
+            loadRecentActivity();
             updateChartsFromFirebase();
             updateParkingStatsFromFirebase();
             
@@ -1187,10 +1220,11 @@
                 refreshButton.innerHTML = originalText;
                 refreshButton.disabled = false;
                 
-                // Update last updated time
+                // Update last updated time with Vietnam timezone
                 const lastUpdatedEl = document.getElementById('lastUpdated');
                 if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed')) {
-                    lastUpdatedEl.textContent = `Last Updated: ${new Date().toLocaleString()}`;
+                    const vietnamTime = getCurrentVietnamTime();
+                    lastUpdatedEl.textContent = `Last Updated: ${formatDateTime(vietnamTime)}`;
                 }
                 
                 console.log('Real-time data refresh completed');
@@ -1290,13 +1324,13 @@
                 }
             }, 30000);
             
-            // Update timestamp display every minute
+            // Update timestamp display every minute with Vietnam time
             setInterval(() => {
-                const now = new Date();
                 const lastUpdatedEl = document.getElementById('lastUpdated');
                 if (lastUpdatedEl && !lastUpdatedEl.textContent.includes('Failed') && !lastUpdatedEl.textContent.includes('connection failed')) {
                     if (!lastUpdatedEl.textContent.includes('Connected to Firebase')) {
-                        lastUpdatedEl.textContent = `Last Updated: ${now.toLocaleString()}`;
+                        const vietnamTime = getCurrentVietnamTime();
+                        lastUpdatedEl.textContent = `Last Updated: ${formatDateTime(vietnamTime)}`;
                     }
                 }
             }, 60000);
